@@ -1,0 +1,212 @@
+
+AutoSys2.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .data         00000000  00800100  00800100  00000142  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  1 .text         000000ee  00000000  00000000  00000054  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .comment      00000030  00000000  00000000  00000142  2**0
+                  CONTENTS, READONLY
+  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000174  2**2
+                  CONTENTS, READONLY
+  4 .debug_aranges 00000028  00000000  00000000  000001b4  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_info   000000ba  00000000  00000000  000001dc  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_abbrev 00000087  00000000  00000000  00000296  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_line   00000135  00000000  00000000  0000031d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_frame  00000034  00000000  00000000  00000454  2**2
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_str    00000151  00000000  00000000  00000488  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_loc    00000043  00000000  00000000  000005d9  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_ranges 00000018  00000000  00000000  0000061c  2**0
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	49 c0       	rjmp	.+146    	; 0x94 <__ctors_end>
+   2:	00 00       	nop
+   4:	4f c0       	rjmp	.+158    	; 0xa4 <__bad_interrupt>
+   6:	00 00       	nop
+   8:	4d c0       	rjmp	.+154    	; 0xa4 <__bad_interrupt>
+   a:	00 00       	nop
+   c:	4b c0       	rjmp	.+150    	; 0xa4 <__bad_interrupt>
+   e:	00 00       	nop
+  10:	49 c0       	rjmp	.+146    	; 0xa4 <__bad_interrupt>
+  12:	00 00       	nop
+  14:	47 c0       	rjmp	.+142    	; 0xa4 <__bad_interrupt>
+  16:	00 00       	nop
+  18:	45 c0       	rjmp	.+138    	; 0xa4 <__bad_interrupt>
+  1a:	00 00       	nop
+  1c:	43 c0       	rjmp	.+134    	; 0xa4 <__bad_interrupt>
+  1e:	00 00       	nop
+  20:	41 c0       	rjmp	.+130    	; 0xa4 <__bad_interrupt>
+  22:	00 00       	nop
+  24:	3f c0       	rjmp	.+126    	; 0xa4 <__bad_interrupt>
+  26:	00 00       	nop
+  28:	3d c0       	rjmp	.+122    	; 0xa4 <__bad_interrupt>
+  2a:	00 00       	nop
+  2c:	3b c0       	rjmp	.+118    	; 0xa4 <__bad_interrupt>
+  2e:	00 00       	nop
+  30:	39 c0       	rjmp	.+114    	; 0xa4 <__bad_interrupt>
+  32:	00 00       	nop
+  34:	37 c0       	rjmp	.+110    	; 0xa4 <__bad_interrupt>
+  36:	00 00       	nop
+  38:	35 c0       	rjmp	.+106    	; 0xa4 <__bad_interrupt>
+  3a:	00 00       	nop
+  3c:	33 c0       	rjmp	.+102    	; 0xa4 <__bad_interrupt>
+  3e:	00 00       	nop
+  40:	31 c0       	rjmp	.+98     	; 0xa4 <__bad_interrupt>
+  42:	00 00       	nop
+  44:	2f c0       	rjmp	.+94     	; 0xa4 <__bad_interrupt>
+  46:	00 00       	nop
+  48:	2d c0       	rjmp	.+90     	; 0xa4 <__bad_interrupt>
+  4a:	00 00       	nop
+  4c:	2b c0       	rjmp	.+86     	; 0xa4 <__bad_interrupt>
+  4e:	00 00       	nop
+  50:	29 c0       	rjmp	.+82     	; 0xa4 <__bad_interrupt>
+  52:	00 00       	nop
+  54:	27 c0       	rjmp	.+78     	; 0xa4 <__bad_interrupt>
+  56:	00 00       	nop
+  58:	25 c0       	rjmp	.+74     	; 0xa4 <__bad_interrupt>
+  5a:	00 00       	nop
+  5c:	23 c0       	rjmp	.+70     	; 0xa4 <__bad_interrupt>
+  5e:	00 00       	nop
+  60:	21 c0       	rjmp	.+66     	; 0xa4 <__bad_interrupt>
+  62:	00 00       	nop
+  64:	1f c0       	rjmp	.+62     	; 0xa4 <__bad_interrupt>
+  66:	00 00       	nop
+  68:	1d c0       	rjmp	.+58     	; 0xa4 <__bad_interrupt>
+  6a:	00 00       	nop
+  6c:	1b c0       	rjmp	.+54     	; 0xa4 <__bad_interrupt>
+  6e:	00 00       	nop
+  70:	19 c0       	rjmp	.+50     	; 0xa4 <__bad_interrupt>
+  72:	00 00       	nop
+  74:	17 c0       	rjmp	.+46     	; 0xa4 <__bad_interrupt>
+  76:	00 00       	nop
+  78:	15 c0       	rjmp	.+42     	; 0xa4 <__bad_interrupt>
+  7a:	00 00       	nop
+  7c:	13 c0       	rjmp	.+38     	; 0xa4 <__bad_interrupt>
+  7e:	00 00       	nop
+  80:	11 c0       	rjmp	.+34     	; 0xa4 <__bad_interrupt>
+  82:	00 00       	nop
+  84:	0f c0       	rjmp	.+30     	; 0xa4 <__bad_interrupt>
+  86:	00 00       	nop
+  88:	0d c0       	rjmp	.+26     	; 0xa4 <__bad_interrupt>
+  8a:	00 00       	nop
+  8c:	0b c0       	rjmp	.+22     	; 0xa4 <__bad_interrupt>
+  8e:	00 00       	nop
+  90:	09 c0       	rjmp	.+18     	; 0xa4 <__bad_interrupt>
+	...
+
+00000094 <__ctors_end>:
+  94:	11 24       	eor	r1, r1
+  96:	1f be       	out	0x3f, r1	; 63
+  98:	cf ef       	ldi	r28, 0xFF	; 255
+  9a:	d0 e1       	ldi	r29, 0x10	; 16
+  9c:	de bf       	out	0x3e, r29	; 62
+  9e:	cd bf       	out	0x3d, r28	; 61
+  a0:	0b d0       	rcall	.+22     	; 0xb8 <main>
+  a2:	23 c0       	rjmp	.+70     	; 0xea <_exit>
+
+000000a4 <__bad_interrupt>:
+  a4:	ad cf       	rjmp	.-166    	; 0x0 <__vectors>
+
+000000a6 <initGPIO>:
+
+
+int initGPIO(void)
+{
+	//Set up input output direction on Port C and G
+	DDRB |= (1<<DB_LED);	// Set the display backlight's IO pin an an output. Leave other bits as they were.
+  a6:	27 9a       	sbi	0x04, 7	; 4
+	DDRC = 0b00000111;		// Set the direction of the IO pins on Port C to output on the 3 least significant bits and input on the 5 higher ones. 5 buttons and 3 LEDs.
+  a8:	87 e0       	ldi	r24, 0x07	; 7
+  aa:	87 b9       	out	0x07, r24	; 7
+	DDRG |= 0b00000011;		// set the direction of the IO pins on Port G's lower 2 bytes as output (LEDs 1 & 2). Leave the other bits as they were.
+  ac:	83 b3       	in	r24, 0x13	; 19
+  ae:	83 60       	ori	r24, 0x03	; 3
+  b0:	83 bb       	out	0x13, r24	; 19
+	return(0);
+}
+  b2:	80 e0       	ldi	r24, 0x00	; 0
+  b4:	90 e0       	ldi	r25, 0x00	; 0
+  b6:	08 95       	ret
+
+000000b8 <main>:
+
+int main(void)
+{
+	unsigned char temp;		//Allocate memory for temp
+	
+	temp = initGPIO();				//Set up the data direction register for both ports C and G
+  b8:	f6 df       	rcall	.-20     	; 0xa6 <initGPIO>
+	
+	while(1)
+	{
+			temp = PORTC;			// Copy Port C to temp.
+  ba:	98 b1       	in	r25, 0x08	; 8
+			temp &= 0b11111000;		// Prepare to turn off Port C LEDs
+  bc:	89 2f       	mov	r24, r25
+  be:	88 7f       	andi	r24, 0xF8	; 248
+			
+			if (temp & 0b10000001)
+  c0:	99 23       	and	r25, r25
+  c2:	0c f4       	brge	.+2      	; 0xc6 <main+0xe>
+			temp |= 0b00000100;		// Prepare to turn on Led5 if S5 is on
+  c4:	84 60       	ori	r24, 0x04	; 4
+			if (temp & 0b01000000)
+  c6:	86 fd       	sbrc	r24, 6
+			temp |= 0b00000010;		// Prepare to turn on Led4 if S4 is on
+  c8:	82 60       	ori	r24, 0x02	; 2
+			if (temp & 0b00100000)
+  ca:	85 fd       	sbrc	r24, 5
+			temp |= 0b00000001;		// Prepare to turn on Led3 if S3 is on
+  cc:	81 60       	ori	r24, 0x01	; 1
+			
+			PORTC = temp & 0b00000111;	// Copy the last 3 bits of temp to Port C to turn on the LEDs.
+  ce:	98 2f       	mov	r25, r24
+  d0:	97 70       	andi	r25, 0x07	; 7
+  d2:	98 b9       	out	0x08, r25	; 8
+			
+			temp &= 0b11111000;		//Clear all LEDs so we do not turn on what we do not want
+  d4:	98 2f       	mov	r25, r24
+  d6:	98 7f       	andi	r25, 0xF8	; 248
+			if (temp & 0b00010000)
+  d8:	84 fd       	sbrc	r24, 4
+			temp |= 0b00000010;		// Prepare to turn on Led2 if S1 is on
+  da:	92 60       	ori	r25, 0x02	; 2
+			if (temp & 0b00001000)
+  dc:	93 fd       	sbrc	r25, 3
+			temp |= 0b00000001;		// Prepare to turn on Led1 if S1 is on
+  de:	91 60       	ori	r25, 0x01	; 1
+			
+			temp &= 0b00000011;		// Clear the upper bits of temp to then turn on only the 2 LEDs in the next line
+			PORTG |= temp;			// Copy the last 2 bits of temp to Port G to turn on the LEDs.
+  e0:	84 b3       	in	r24, 0x14	; 20
+			if (temp & 0b00010000)
+			temp |= 0b00000010;		// Prepare to turn on Led2 if S1 is on
+			if (temp & 0b00001000)
+			temp |= 0b00000001;		// Prepare to turn on Led1 if S1 is on
+			
+			temp &= 0b00000011;		// Clear the upper bits of temp to then turn on only the 2 LEDs in the next line
+  e2:	93 70       	andi	r25, 0x03	; 3
+			PORTG |= temp;			// Copy the last 2 bits of temp to Port G to turn on the LEDs.
+  e4:	98 2b       	or	r25, r24
+  e6:	94 bb       	out	0x14, r25	; 20
+
+	}
+  e8:	e8 cf       	rjmp	.-48     	; 0xba <main+0x2>
+
+000000ea <_exit>:
+  ea:	f8 94       	cli
+
+000000ec <__stop_program>:
+  ec:	ff cf       	rjmp	.-2      	; 0xec <__stop_program>
