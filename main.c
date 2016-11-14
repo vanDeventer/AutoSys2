@@ -2,17 +2,21 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
+ * Updated: 14-Nov-16 @ 08:40
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to set up the General Purpose Inputs Outputs (GPIO) on ports B, C and G to read the buttons and light up the LEDs using a while loop.
-*/
+ *	The purpose of this program is to give students the experience of working with multiple files. In this case delay. h and delay.c need to be added.
+ *	This program turns on the center LED and then goes outwards.
+ *	Compilation gives one warning.
+ */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
 
 #include <avr/io.h>	// Standard IO header file
+#include "delay.h"
 
 
 int initGPIO(void)
@@ -28,36 +32,32 @@ int initGPIO(void)
 
 int main(void)
 {
-	unsigned char temp = 0x0F;		//Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
+	unsigned char temp = 0xFF;		//Allocate memory for temp. It is initialized to 255 for demonstration purposes only.
 	
 	temp = initGPIO();				//Set up the data direction register for both ports C and G
 	
 	while(1)
 	{
-			temp = PINC;			// Copy Port C to temp.
-			temp &= 0b11111000;		// Prepare to turn off Port C LEDs
-			
-			if (temp & 0b10000000)
-			temp |= 0b00000100;		// Prepare to turn on Led5 if S5 is on
-			if (temp & 0b01000000)
-			temp |= 0b00000010;		// Prepare to turn on Led4 if S4 is on
-			if (temp & 0b00100000)
-			temp |= 0b00000001;		// Prepare to turn on Led3 if S3 is on
-			
-			PORTC = temp & 0b00000111;// Copy the last 3 bits of temp to Port C to turn on the LEDs.
-			
-			temp &= 0b11111000;		// Clear all LEDs so we do not turn on what we do not want
-			PORTG &= 0b11111100;	// Turn off the two LEDs without affecting the other pins.
-			
-			if (temp & 0b00010000)
-			temp |= 0b00000010;		// Prepare to turn on Led2 if S2 is on
-			if (temp & 0b00001000)
-			temp |= 0b00000001;		// Prepare to turn on Led1 if S1 is on
-			
-			PORTG |= (temp & 0b00000011);			// Copy the last 2 bits of temp to Port G to turn on the LEDs. DO NOT AFFECT THE UPPER BITS!
-			
-// NOTE: THE ABOVE LOGIC ALLOWS YOU TO HAVE MORE THAN 1 LED ON AT THE TIME.			
-
+		PORTC = 0b000000001;	//Tun on Led3
+		PORTG &= 0x00;			//Turn off all Leds on PortG
+		delay_s(1);				//Wait 1 second
+		
+		PORTC = 0b00000010;		//Turn on Led4 on PortC
+		PORTG = 0x02;			//Turn on Led2 on PortG
+		delay_ms(255);			//Wait 255 ms
+		
+		PORTC = 0b00000100;		//Turn on Led5 on PortC
+		PORTG = 0x01;			//Turn on Led1 on PortG
+		delay_ms(255);			//Wait 255 ms
+		delay_ms(255);			//Wait 255 ms
+		
+		if (PINB & (1<<DB_LED))		// If the display backlight is on, then 
+		{
+			PORTB &= ~(1<<DB_LED);	// Turn off the display backlight.
+		} 
+		else
+		{
+			PORTB |= (1<<DB_LED);	// Turn on turn display backlight.
+		}
 	}
 }
-

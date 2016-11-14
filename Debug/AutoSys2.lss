@@ -3,29 +3,29 @@ AutoSys2.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .data         00000000  00800100  00800100  000001fa  2**0
+  0 .data         00000000  00800100  00800100  0000024c  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  1 .text         000001a6  00000000  00000000  00000054  2**1
+  1 .text         000001f8  00000000  00000000  00000054  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .comment      00000030  00000000  00000000  000001fa  2**0
+  2 .comment      00000030  00000000  00000000  0000024c  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  0000022c  2**2
+  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  0000027c  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 00000028  00000000  00000000  0000026c  2**0
+  4 .debug_aranges 00000050  00000000  00000000  000002bc  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000000b0  00000000  00000000  00000294  2**0
+  5 .debug_info   00000165  00000000  00000000  0000030c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 0000007c  00000000  00000000  00000344  2**0
+  6 .debug_abbrev 00000105  00000000  00000000  00000471  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   0000013b  00000000  00000000  000003c0  2**0
+  7 .debug_line   000001cf  00000000  00000000  00000576  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  00000054  00000000  00000000  000004fc  2**2
+  8 .debug_frame  000000a8  00000000  00000000  00000748  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    00000151  00000000  00000000  00000550  2**0
+  9 .debug_str    0000018e  00000000  00000000  000007f0  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00000083  00000000  00000000  000006a1  2**0
+ 10 .debug_loc    00000113  00000000  00000000  0000097e  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000018  00000000  00000000  00000724  2**0
+ 11 .debug_ranges 00000030  00000000  00000000  00000a91  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -113,191 +113,277 @@ Disassembly of section .text:
   9a:	d0 e1       	ldi	r29, 0x10	; 16
   9c:	de bf       	out	0x3e, r29	; 62
   9e:	cd bf       	out	0x3d, r28	; 61
-  a0:	22 d0       	rcall	.+68     	; 0xe6 <main>
-  a2:	7f c0       	rjmp	.+254    	; 0x1a2 <_exit>
+  a0:	5d d0       	rcall	.+186    	; 0x15c <main>
+  a2:	a8 c0       	rjmp	.+336    	; 0x1f4 <_exit>
 
 000000a4 <__bad_interrupt>:
   a4:	ad cf       	rjmp	.-166    	; 0x0 <__vectors>
 
-000000a6 <initGPIO>:
+000000a6 <delay_ms>:
 
+/*! \brief Millisecond delay
+ * \param ms the delay in milliseconds
+ */
+void delay_ms(unsigned char ms)
+{
+  a6:	cf 93       	push	r28
+  a8:	df 93       	push	r29
+  aa:	00 d0       	rcall	.+0      	; 0xac <delay_ms+0x6>
+  ac:	00 d0       	rcall	.+0      	; 0xae <delay_ms+0x8>
+  ae:	1f 92       	push	r1
+  b0:	cd b7       	in	r28, 0x3d	; 61
+  b2:	de b7       	in	r29, 0x3e	; 62
+  b4:	8d 83       	std	Y+5, r24	; 0x05
+   unsigned short delay_count = F_CPU / 4000;
+  b6:	86 e6       	ldi	r24, 0x66	; 102
+  b8:	9e e0       	ldi	r25, 0x0E	; 14
+  ba:	9a 83       	std	Y+2, r25	; 0x02
+  bc:	89 83       	std	Y+1, r24	; 0x01
+#ifdef __GNUC__
+    unsigned short cnt;
+    __asm__ __volatile__ ("\n"
+  be:	4d 81       	ldd	r20, Y+5	; 0x05
+  c0:	29 81       	ldd	r18, Y+1	; 0x01
+  c2:	3a 81       	ldd	r19, Y+2	; 0x02
+
+000000c4 <L_dl124>:
+  c4:	82 2f       	mov	r24, r18
+  c6:	93 2f       	mov	r25, r19
+
+000000c8 <L_dl224>:
+  c8:	01 97       	sbiw	r24, 0x01	; 1
+  ca:	f1 f7       	brne	.-4      	; 0xc8 <L_dl224>
+  cc:	4a 95       	dec	r20
+  ce:	d1 f7       	brne	.-12     	; 0xc4 <L_dl124>
+  d0:	9c 83       	std	Y+4, r25	; 0x04
+  d2:	8b 83       	std	Y+3, r24	; 0x03
+    while (ms--) {
+        delay_cnt_buffer = delay_cnt;
+        while (delay_cnt_buffer--);
+    }
+#endif
+}
+  d4:	0f 90       	pop	r0
+  d6:	0f 90       	pop	r0
+  d8:	0f 90       	pop	r0
+  da:	0f 90       	pop	r0
+  dc:	0f 90       	pop	r0
+  de:	df 91       	pop	r29
+  e0:	cf 91       	pop	r28
+  e2:	08 95       	ret
+
+000000e4 <delay_s>:
+
+/*! \brief Seconds delay
+ * \param s delay in seconds
+ */
+void delay_s(unsigned char s)
+{
+  e4:	cf 93       	push	r28
+  e6:	df 93       	push	r29
+  e8:	00 d0       	rcall	.+0      	; 0xea <delay_s+0x6>
+  ea:	cd b7       	in	r28, 0x3d	; 61
+  ec:	de b7       	in	r29, 0x3e	; 62
+  ee:	8a 83       	std	Y+2, r24	; 0x02
+	for (unsigned char i=0;i<s;i++)
+  f0:	19 82       	std	Y+1, r1	; 0x01
+  f2:	0b c0       	rjmp	.+22     	; 0x10a <delay_s+0x26>
+	{
+		delay_ms(250);
+  f4:	8a ef       	ldi	r24, 0xFA	; 250
+  f6:	d7 df       	rcall	.-82     	; 0xa6 <delay_ms>
+		delay_ms(250);
+  f8:	8a ef       	ldi	r24, 0xFA	; 250
+  fa:	d5 df       	rcall	.-86     	; 0xa6 <delay_ms>
+		delay_ms(250);
+  fc:	8a ef       	ldi	r24, 0xFA	; 250
+  fe:	d3 df       	rcall	.-90     	; 0xa6 <delay_ms>
+		delay_ms(250);
+ 100:	8a ef       	ldi	r24, 0xFA	; 250
+ 102:	d1 df       	rcall	.-94     	; 0xa6 <delay_ms>
+/*! \brief Seconds delay
+ * \param s delay in seconds
+ */
+void delay_s(unsigned char s)
+{
+	for (unsigned char i=0;i<s;i++)
+ 104:	89 81       	ldd	r24, Y+1	; 0x01
+ 106:	8f 5f       	subi	r24, 0xFF	; 255
+ 108:	89 83       	std	Y+1, r24	; 0x01
+ 10a:	99 81       	ldd	r25, Y+1	; 0x01
+ 10c:	8a 81       	ldd	r24, Y+2	; 0x02
+ 10e:	98 17       	cp	r25, r24
+ 110:	88 f3       	brcs	.-30     	; 0xf4 <delay_s+0x10>
+		delay_ms(250);
+		delay_ms(250);
+		delay_ms(250);
+		delay_ms(250);
+	}
+ 112:	0f 90       	pop	r0
+ 114:	0f 90       	pop	r0
+ 116:	df 91       	pop	r29
+ 118:	cf 91       	pop	r28
+ 11a:	08 95       	ret
+
+0000011c <initGPIO>:
 #include <avr/io.h>	// Standard IO header file
+#include "delay.h"
 
 
 int initGPIO(void)
 {
-  a6:	cf 93       	push	r28
-  a8:	df 93       	push	r29
-  aa:	cd b7       	in	r28, 0x3d	; 61
-  ac:	de b7       	in	r29, 0x3e	; 62
+ 11c:	cf 93       	push	r28
+ 11e:	df 93       	push	r29
+ 120:	cd b7       	in	r28, 0x3d	; 61
+ 122:	de b7       	in	r29, 0x3e	; 62
 	//Set up input output direction on Port C and G
 	DDRB |= (1<<DB_LED);	// Set the display backlight's IO pin an an output. Leave other bits as they were.
-  ae:	84 e2       	ldi	r24, 0x24	; 36
-  b0:	90 e0       	ldi	r25, 0x00	; 0
-  b2:	24 e2       	ldi	r18, 0x24	; 36
-  b4:	30 e0       	ldi	r19, 0x00	; 0
-  b6:	f9 01       	movw	r30, r18
-  b8:	20 81       	ld	r18, Z
-  ba:	20 68       	ori	r18, 0x80	; 128
-  bc:	fc 01       	movw	r30, r24
-  be:	20 83       	st	Z, r18
+ 124:	84 e2       	ldi	r24, 0x24	; 36
+ 126:	90 e0       	ldi	r25, 0x00	; 0
+ 128:	24 e2       	ldi	r18, 0x24	; 36
+ 12a:	30 e0       	ldi	r19, 0x00	; 0
+ 12c:	f9 01       	movw	r30, r18
+ 12e:	20 81       	ld	r18, Z
+ 130:	20 68       	ori	r18, 0x80	; 128
+ 132:	fc 01       	movw	r30, r24
+ 134:	20 83       	st	Z, r18
 	DDRC = 0b00000111;		// Set the direction of the IO pins on Port C to output on the 3 least significant bits and input on the 5 higher ones. 5 buttons and 3 LEDs.
-  c0:	87 e2       	ldi	r24, 0x27	; 39
-  c2:	90 e0       	ldi	r25, 0x00	; 0
-  c4:	27 e0       	ldi	r18, 0x07	; 7
-  c6:	fc 01       	movw	r30, r24
-  c8:	20 83       	st	Z, r18
+ 136:	87 e2       	ldi	r24, 0x27	; 39
+ 138:	90 e0       	ldi	r25, 0x00	; 0
+ 13a:	27 e0       	ldi	r18, 0x07	; 7
+ 13c:	fc 01       	movw	r30, r24
+ 13e:	20 83       	st	Z, r18
 	DDRG |= 0b00000011;		// set the direction of the IO pins on Port G's lower 2 bytes as output (LEDs 1 & 2). Leave the other bits as they were.
-  ca:	83 e3       	ldi	r24, 0x33	; 51
-  cc:	90 e0       	ldi	r25, 0x00	; 0
-  ce:	23 e3       	ldi	r18, 0x33	; 51
-  d0:	30 e0       	ldi	r19, 0x00	; 0
-  d2:	f9 01       	movw	r30, r18
-  d4:	20 81       	ld	r18, Z
-  d6:	23 60       	ori	r18, 0x03	; 3
-  d8:	fc 01       	movw	r30, r24
-  da:	20 83       	st	Z, r18
+ 140:	83 e3       	ldi	r24, 0x33	; 51
+ 142:	90 e0       	ldi	r25, 0x00	; 0
+ 144:	23 e3       	ldi	r18, 0x33	; 51
+ 146:	30 e0       	ldi	r19, 0x00	; 0
+ 148:	f9 01       	movw	r30, r18
+ 14a:	20 81       	ld	r18, Z
+ 14c:	23 60       	ori	r18, 0x03	; 3
+ 14e:	fc 01       	movw	r30, r24
+ 150:	20 83       	st	Z, r18
 	return(0);
-  dc:	80 e0       	ldi	r24, 0x00	; 0
-  de:	90 e0       	ldi	r25, 0x00	; 0
+ 152:	80 e0       	ldi	r24, 0x00	; 0
+ 154:	90 e0       	ldi	r25, 0x00	; 0
 }
-  e0:	df 91       	pop	r29
-  e2:	cf 91       	pop	r28
-  e4:	08 95       	ret
+ 156:	df 91       	pop	r29
+ 158:	cf 91       	pop	r28
+ 15a:	08 95       	ret
 
-000000e6 <main>:
+0000015c <main>:
 
 
 
 int main(void)
 {
-  e6:	cf 93       	push	r28
-  e8:	df 93       	push	r29
-  ea:	1f 92       	push	r1
-  ec:	cd b7       	in	r28, 0x3d	; 61
-  ee:	de b7       	in	r29, 0x3e	; 62
-	unsigned char temp = 0x0F;		//Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
-  f0:	8f e0       	ldi	r24, 0x0F	; 15
-  f2:	89 83       	std	Y+1, r24	; 0x01
+ 15c:	cf 93       	push	r28
+ 15e:	df 93       	push	r29
+ 160:	1f 92       	push	r1
+ 162:	cd b7       	in	r28, 0x3d	; 61
+ 164:	de b7       	in	r29, 0x3e	; 62
+	unsigned char temp = 0xFF;		//Allocate memory for temp. It is initialized to 255 for demonstration purposes only.
+ 166:	8f ef       	ldi	r24, 0xFF	; 255
+ 168:	89 83       	std	Y+1, r24	; 0x01
 	
 	temp = initGPIO();				//Set up the data direction register for both ports C and G
-  f4:	d8 df       	rcall	.-80     	; 0xa6 <initGPIO>
-  f6:	89 83       	std	Y+1, r24	; 0x01
+ 16a:	d8 df       	rcall	.-80     	; 0x11c <initGPIO>
+ 16c:	89 83       	std	Y+1, r24	; 0x01
 	
 	while(1)
 	{
-			temp = PINC;			// Copy Port C to temp.
-  f8:	86 e2       	ldi	r24, 0x26	; 38
-  fa:	90 e0       	ldi	r25, 0x00	; 0
-  fc:	fc 01       	movw	r30, r24
-  fe:	80 81       	ld	r24, Z
- 100:	89 83       	std	Y+1, r24	; 0x01
-			temp &= 0b11111000;		// Prepare to turn off Port C LEDs
- 102:	89 81       	ldd	r24, Y+1	; 0x01
- 104:	88 7f       	andi	r24, 0xF8	; 248
- 106:	89 83       	std	Y+1, r24	; 0x01
-			
-			if (temp & 0b10000000)
- 108:	89 81       	ldd	r24, Y+1	; 0x01
- 10a:	88 23       	and	r24, r24
- 10c:	1c f4       	brge	.+6      	; 0x114 <main+0x2e>
-			temp |= 0b00000100;		// Prepare to turn on Led5 if S5 is on
- 10e:	89 81       	ldd	r24, Y+1	; 0x01
- 110:	84 60       	ori	r24, 0x04	; 4
- 112:	89 83       	std	Y+1, r24	; 0x01
-			if (temp & 0b01000000)
- 114:	89 81       	ldd	r24, Y+1	; 0x01
- 116:	88 2f       	mov	r24, r24
- 118:	90 e0       	ldi	r25, 0x00	; 0
- 11a:	80 74       	andi	r24, 0x40	; 64
- 11c:	99 27       	eor	r25, r25
- 11e:	89 2b       	or	r24, r25
- 120:	19 f0       	breq	.+6      	; 0x128 <main+0x42>
-			temp |= 0b00000010;		// Prepare to turn on Led4 if S4 is on
- 122:	89 81       	ldd	r24, Y+1	; 0x01
- 124:	82 60       	ori	r24, 0x02	; 2
- 126:	89 83       	std	Y+1, r24	; 0x01
-			if (temp & 0b00100000)
- 128:	89 81       	ldd	r24, Y+1	; 0x01
- 12a:	88 2f       	mov	r24, r24
- 12c:	90 e0       	ldi	r25, 0x00	; 0
- 12e:	80 72       	andi	r24, 0x20	; 32
- 130:	99 27       	eor	r25, r25
- 132:	89 2b       	or	r24, r25
- 134:	19 f0       	breq	.+6      	; 0x13c <main+0x56>
-			temp |= 0b00000001;		// Prepare to turn on Led3 if S3 is on
- 136:	89 81       	ldd	r24, Y+1	; 0x01
- 138:	81 60       	ori	r24, 0x01	; 1
- 13a:	89 83       	std	Y+1, r24	; 0x01
-			
-			PORTC = temp & 0b00000111;// Copy the last 3 bits of temp to Port C to turn on the LEDs.
- 13c:	88 e2       	ldi	r24, 0x28	; 40
- 13e:	90 e0       	ldi	r25, 0x00	; 0
- 140:	29 81       	ldd	r18, Y+1	; 0x01
- 142:	27 70       	andi	r18, 0x07	; 7
- 144:	fc 01       	movw	r30, r24
- 146:	20 83       	st	Z, r18
-			
-			temp &= 0b11111000;		// Clear all LEDs so we do not turn on what we do not want
- 148:	89 81       	ldd	r24, Y+1	; 0x01
- 14a:	88 7f       	andi	r24, 0xF8	; 248
- 14c:	89 83       	std	Y+1, r24	; 0x01
-			PORTG &= 0b11111100;	// Turn off the two LEDs without affecting the other pins.
- 14e:	84 e3       	ldi	r24, 0x34	; 52
- 150:	90 e0       	ldi	r25, 0x00	; 0
- 152:	24 e3       	ldi	r18, 0x34	; 52
- 154:	30 e0       	ldi	r19, 0x00	; 0
- 156:	f9 01       	movw	r30, r18
- 158:	20 81       	ld	r18, Z
- 15a:	2c 7f       	andi	r18, 0xFC	; 252
- 15c:	fc 01       	movw	r30, r24
- 15e:	20 83       	st	Z, r18
-			if (temp & 0b00010000)
- 160:	89 81       	ldd	r24, Y+1	; 0x01
- 162:	88 2f       	mov	r24, r24
- 164:	90 e0       	ldi	r25, 0x00	; 0
- 166:	80 71       	andi	r24, 0x10	; 16
- 168:	99 27       	eor	r25, r25
- 16a:	89 2b       	or	r24, r25
- 16c:	19 f0       	breq	.+6      	; 0x174 <main+0x8e>
-			temp |= 0b00000010;		// Prepare to turn on Led2 if S2 is on
- 16e:	89 81       	ldd	r24, Y+1	; 0x01
- 170:	82 60       	ori	r24, 0x02	; 2
- 172:	89 83       	std	Y+1, r24	; 0x01
-			if (temp & 0b00001000)
- 174:	89 81       	ldd	r24, Y+1	; 0x01
- 176:	88 2f       	mov	r24, r24
- 178:	90 e0       	ldi	r25, 0x00	; 0
- 17a:	88 70       	andi	r24, 0x08	; 8
- 17c:	99 27       	eor	r25, r25
- 17e:	89 2b       	or	r24, r25
- 180:	19 f0       	breq	.+6      	; 0x188 <main+0xa2>
-			temp |= 0b00000001;		// Prepare to turn on Led1 if S1 is on
- 182:	89 81       	ldd	r24, Y+1	; 0x01
- 184:	81 60       	ori	r24, 0x01	; 1
- 186:	89 83       	std	Y+1, r24	; 0x01
-			
-			PORTG |= (temp & 0b00000011);			// Copy the last 2 bits of temp to Port G to turn on the LEDs. DO NOT AFFECT THE UPPER BITS!
- 188:	84 e3       	ldi	r24, 0x34	; 52
- 18a:	90 e0       	ldi	r25, 0x00	; 0
- 18c:	24 e3       	ldi	r18, 0x34	; 52
- 18e:	30 e0       	ldi	r19, 0x00	; 0
- 190:	f9 01       	movw	r30, r18
- 192:	20 81       	ld	r18, Z
- 194:	32 2f       	mov	r19, r18
- 196:	29 81       	ldd	r18, Y+1	; 0x01
- 198:	23 70       	andi	r18, 0x03	; 3
- 19a:	23 2b       	or	r18, r19
+		PORTC = 0b000000001;	//Tun on Led3
+ 16e:	88 e2       	ldi	r24, 0x28	; 40
+ 170:	90 e0       	ldi	r25, 0x00	; 0
+ 172:	21 e0       	ldi	r18, 0x01	; 1
+ 174:	fc 01       	movw	r30, r24
+ 176:	20 83       	st	Z, r18
+		PORTG &= 0x00;			//Turn off all Leds on PortG
+ 178:	84 e3       	ldi	r24, 0x34	; 52
+ 17a:	90 e0       	ldi	r25, 0x00	; 0
+ 17c:	fc 01       	movw	r30, r24
+ 17e:	80 81       	ld	r24, Z
+ 180:	84 e3       	ldi	r24, 0x34	; 52
+ 182:	90 e0       	ldi	r25, 0x00	; 0
+ 184:	fc 01       	movw	r30, r24
+ 186:	10 82       	st	Z, r1
+		delay_s(1);				//Wait 1 second
+ 188:	81 e0       	ldi	r24, 0x01	; 1
+ 18a:	ac df       	rcall	.-168    	; 0xe4 <delay_s>
+		
+		PORTC = 0b00000010;		//Turn on Led4 on PortC
+ 18c:	88 e2       	ldi	r24, 0x28	; 40
+ 18e:	90 e0       	ldi	r25, 0x00	; 0
+ 190:	22 e0       	ldi	r18, 0x02	; 2
+ 192:	fc 01       	movw	r30, r24
+ 194:	20 83       	st	Z, r18
+		PORTG = 0x02;			//Turn on Led2 on PortG
+ 196:	84 e3       	ldi	r24, 0x34	; 52
+ 198:	90 e0       	ldi	r25, 0x00	; 0
+ 19a:	22 e0       	ldi	r18, 0x02	; 2
  19c:	fc 01       	movw	r30, r24
  19e:	20 83       	st	Z, r18
-			
-// NOTE: THE ABOVE LOGIC ALLOWS YOU TO HAVE MORE THAN 1 LED ON AT THE TIME.			
-
+		delay_ms(255);			//Wait 255 ms
+ 1a0:	8f ef       	ldi	r24, 0xFF	; 255
+ 1a2:	81 df       	rcall	.-254    	; 0xa6 <delay_ms>
+		
+		PORTC = 0b00000100;		//Turn on Led5 on PortC
+ 1a4:	88 e2       	ldi	r24, 0x28	; 40
+ 1a6:	90 e0       	ldi	r25, 0x00	; 0
+ 1a8:	24 e0       	ldi	r18, 0x04	; 4
+ 1aa:	fc 01       	movw	r30, r24
+ 1ac:	20 83       	st	Z, r18
+		PORTG = 0x01;			//Turn on Led1 on PortG
+ 1ae:	84 e3       	ldi	r24, 0x34	; 52
+ 1b0:	90 e0       	ldi	r25, 0x00	; 0
+ 1b2:	21 e0       	ldi	r18, 0x01	; 1
+ 1b4:	fc 01       	movw	r30, r24
+ 1b6:	20 83       	st	Z, r18
+		delay_ms(255);			//Wait 255 ms
+ 1b8:	8f ef       	ldi	r24, 0xFF	; 255
+ 1ba:	75 df       	rcall	.-278    	; 0xa6 <delay_ms>
+		delay_ms(255);			//Wait 255 ms
+ 1bc:	8f ef       	ldi	r24, 0xFF	; 255
+ 1be:	73 df       	rcall	.-282    	; 0xa6 <delay_ms>
+		
+		if (PINB & (1<<DB_LED))		// If the display backlight is on, then 
+ 1c0:	83 e2       	ldi	r24, 0x23	; 35
+ 1c2:	90 e0       	ldi	r25, 0x00	; 0
+ 1c4:	fc 01       	movw	r30, r24
+ 1c6:	80 81       	ld	r24, Z
+ 1c8:	88 23       	and	r24, r24
+ 1ca:	54 f4       	brge	.+20     	; 0x1e0 <main+0x84>
+		{
+			PORTB &= ~(1<<DB_LED);	// Turn off the display backlight.
+ 1cc:	85 e2       	ldi	r24, 0x25	; 37
+ 1ce:	90 e0       	ldi	r25, 0x00	; 0
+ 1d0:	25 e2       	ldi	r18, 0x25	; 37
+ 1d2:	30 e0       	ldi	r19, 0x00	; 0
+ 1d4:	f9 01       	movw	r30, r18
+ 1d6:	20 81       	ld	r18, Z
+ 1d8:	2f 77       	andi	r18, 0x7F	; 127
+ 1da:	fc 01       	movw	r30, r24
+ 1dc:	20 83       	st	Z, r18
+ 1de:	09 c0       	rjmp	.+18     	; 0x1f2 <main+0x96>
+		} 
+		else
+		{
+			PORTB |= (1<<DB_LED);	// Turn on turn display backlight.
+ 1e0:	85 e2       	ldi	r24, 0x25	; 37
+ 1e2:	90 e0       	ldi	r25, 0x00	; 0
+ 1e4:	25 e2       	ldi	r18, 0x25	; 37
+ 1e6:	30 e0       	ldi	r19, 0x00	; 0
+ 1e8:	f9 01       	movw	r30, r18
+ 1ea:	20 81       	ld	r18, Z
+ 1ec:	20 68       	ori	r18, 0x80	; 128
+ 1ee:	fc 01       	movw	r30, r24
+ 1f0:	20 83       	st	Z, r18
+		}
 	}
- 1a0:	ab cf       	rjmp	.-170    	; 0xf8 <main+0x12>
+ 1f2:	bd cf       	rjmp	.-134    	; 0x16e <main+0x12>
 
-000001a2 <_exit>:
- 1a2:	f8 94       	cli
+000001f4 <_exit>:
+ 1f4:	f8 94       	cli
 
-000001a4 <__stop_program>:
- 1a4:	ff cf       	rjmp	.-2      	; 0x1a4 <__stop_program>
+000001f6 <__stop_program>:
+ 1f6:	ff cf       	rjmp	.-2      	; 0x1f6 <__stop_program>
