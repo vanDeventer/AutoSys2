@@ -7,13 +7,19 @@
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to set up the General Purpose Inputs Outputs (GPIO) on ports B, C and G to read the buttons and light up the LEDs using a while loop.
+ * The purpose of this version of the program is to introduce External Interrupts.
 */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
 
 #include <avr/io.h>	// Standard IO header file
+#include <avr/pgmspace.h>	// Contains some type definitions and functions.
+#include <avr/interrupt.h>	// Contains ISR (Interrupt Service Routines) or interrupt handler details
+// The above files should be in C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\
 
+volatile unsigned char buttons;		// This registers holds a copy of PINC when an external interrupt 6 has occurred.
+volatile unsigned char bToggle = 0;	// This registers is a boolean that is set when an interrupt 6 occurs and cleared when serviced in the code.
+//These registers is available outside of the main loop (i.e., to the interrupt handlers)
 
 int initGPIO(void)
 {
@@ -24,40 +30,62 @@ int initGPIO(void)
 	return(0);
 }
 
+int iniExtInt(void)
+{
+	//Set up external Interrupts
+	// The five Switches are ORed to Pin PE6 which is alternatively Int6
+	EICRB |= (0<<ISC61) | (1<<ISC60);  //Any logical change to INT6 generates an interrupt
+	EIMSK |= (1<<INTF6);
+	return(6);
+}
+
+
 
 
 int main(void)
 {
-	unsigned char temp = 0x0F;		//Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
+	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
 	
-	temp = initGPIO();				//Set up the data direction register for both ports C and G
+	temp = initGPIO();				// Set up the data direction register for both ports C and G
+	temp = iniExtInt();				// Setup external interrupts
+	sei();					// Set Global Interrupts
 	
 	while(1)
 	{
-			temp = PINC;			// Copy Port C to temp.
-			temp &= 0b11111000;		// Prepare to turn off Port C LEDs
-			
-			if (temp & 0b10000000)
-			temp |= 0b00000100;		// Prepare to turn on Led5 if S5 is on
-			if (temp & 0b01000000)
-			temp |= 0b00000010;		// Prepare to turn on Led4 if S4 is on
-			if (temp & 0b00100000)
-			temp |= 0b00000001;		// Prepare to turn on Led3 if S3 is on
-			
-			PORTC = temp & 0b00000111;// Copy the last 3 bits of temp to Port C to turn on the LEDs.
-			
-			temp &= 0b11111000;		// Clear all LEDs so we do not turn on what we do not want
-			PORTG &= 0b11111100;	// Turn off the two LEDs without affecting the other pins.
-			
-			if (temp & 0b00010000)
-			temp |= 0b00000010;		// Prepare to turn on Led2 if S2 is on
-			if (temp & 0b00001000)
-			temp |= 0b00000001;		// Prepare to turn on Led1 if S1 is on
-			
-			PORTG |= (temp & 0b00000011);			// Copy the last 2 bits of temp to Port G to turn on the LEDs. DO NOT AFFECT THE UPPER BITS!
-			
-// NOTE: THE ABOVE LOGIC ALLOWS YOU TO HAVE MORE THAN 1 LED ON AT THE TIME.			
+		if (bToggle)
+		{
+			switch(buttons & 0b11111000)
+			{
+				case 0b10000000:			//S5 center button
+					PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
+					break;
+				case 0b01000000:			//S4  upper button
+					PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
+					break;
+				case 0b00100000:			//S3 left button
+					PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
+					break;
+				case 0b00010000:			//S2 lower button
+					PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
+					break;
+				case 0b00001000:			//S1 right button
+					PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
+					break;
+				default:
+					PORTC &= 0b11111000;	//Turn off Port C LEDs
+					PORTG &= 0x11111100;	//Turn off Port G LEDs
+				break;
+			}
+		bToggle = 0;
+		}			
+// NOTE: THE ABOVE LOGIC ALLOWS YOU TO HAVE ONLY 1 LED ON AT THE TIME. This would be the case if you had a joystick.			
 
 	}
+}
+
+SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has been generated. It is kept short.
+{
+	bToggle = 1;
+	buttons = PINC;
 }
 
