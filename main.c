@@ -2,12 +2,13 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
+ * Updated: 21-Dec-16
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to introduce External Interrupts.
+ * The purpose of this version of the program is to introduce Internal Interrupts (using Timer x).
 */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
@@ -40,7 +41,14 @@ int iniExtInt(void)
 }
 
 
-
+int initTimer2()
+{
+	//Set up external Interrupts
+	// The five Switches are ORed to Pin PE6 which is alternatively Int6
+	EICRB |= (0<<ISC61) | (1<<ISC60);  //Any logical change to INT6 generates an interrupt
+	EIMSK |= (1<<INTF6);
+	return(6);
+}
 
 int main(void)
 {
