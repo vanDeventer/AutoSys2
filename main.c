@@ -2,12 +2,13 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
+ * Updated: 21-Dec-16
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to introduce External Interrupts.
+ * The purpose of this version of the program is to introduce Internal Interrupts (using Timer 2).
 */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
@@ -30,7 +31,7 @@ int initGPIO(void)
 	return(0);
 }
 
-int iniExtInt(void)
+int initExtInt(void)
 {
 	//Set up external Interrupts
 	// The five Switches are ORed to Pin PE6 which is alternatively Int6
@@ -40,47 +41,33 @@ int iniExtInt(void)
 }
 
 
-
+int initTimer2()
+{
+	/// Set up an internal Interrupt that will occur every 5 milliseconds.
+	/// It uses the Timer Counter 2 in CTC mode with a pre-scaler of 256 and a value of 155 (it should be 155.25).
+	// 
+	TCCR2A = (1<<WGM21); // | (0<<WGM20);  //CTC mode
+	//TCCR2A |= (0<<COM2A1) | (0<<COM2A0); // Mormal port operation, OC2A is disconnected.
+	TCCR2A |= (1<<CS22) | (1<<CS21); //| (0<<CS20); /// Divide source frequency source by 256.
+	TCNT2 = 0;	/// Make sure the timer counter is set to 0.
+	OCR2A = 155;
+	TIMSK2 = (1<<OCF2A); // Interrupt flag register to enable output compare.
+	return(2);
+}
 
 int main(void)
 {
 	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
 	
 	temp = initGPIO();				// Set up the data direction register for both ports C and G
-	temp = iniExtInt();				// Setup external interrupts
-	sei();					// Set Global Interrupts
+	temp = initExtInt();			// Setup external interrupts
+	temp = initTimer2();			// Setup 5ms internal interrupt
+	sei();							// Set Global Interrupts
 	
 	while(1)
 	{
-		if (bToggle)
-		{
-			switch(buttons & 0b11111000)
-			{
-				case 0b10000000:			//S5 center button
-					PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
-					break;
-				case 0b01000000:			//S4  upper button
-					PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
-					break;
-				case 0b00100000:			//S3 left button
-					PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
-					break;
-				case 0b00010000:			//S2 lower button
-					PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
-					break;
-				case 0b00001000:			//S1 right button
-					PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
-					break;
-				default:
-					PORTC &= 0b11111000;	//Turn off Port C LEDs
-					PORTG &= 0x11111100;	//Turn off Port G LEDs
-				break;
-			}
-		bToggle = 0;
-		}			
-// NOTE: THE ABOVE LOGIC ALLOWS YOU TO HAVE ONLY 1 LED ON AT THE TIME. This would be the case if you had a joystick.			
-
-	}
+	temp++;
+	}			
 }
 
 SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has been generated. It is kept short.
@@ -89,3 +76,35 @@ SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has be
 	buttons = PINC;
 }
 
+
+
+SIGNAL(SIG_OUTPUT_COMPARE2)
+{	
+
+	if (bToggle)
+	{
+		switch(buttons & 0b11111000)
+		{
+			case 0b10000000:			//S5 center button
+			PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
+			break;
+			case 0b01000000:			//S4  upper button
+			PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
+			break;
+			case 0b00100000:			//S3 left button
+			PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
+			break;
+			case 0b00010000:			//S2 lower button
+			PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
+			break;
+			case 0b00001000:			//S1 right button
+			PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
+			break;
+			default:
+			PORTC &= 0b11111000;	//Turn off Port C LEDs
+			PORTG &= 0x11111100;	//Turn off Port G LEDs
+			break;
+		}
+		bToggle = 0;
+   }
+}
