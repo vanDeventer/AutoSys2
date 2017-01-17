@@ -8,7 +8,7 @@
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to introduce Internal Interrupts (using Timer 2).
+ * The purpose of this version of the program is to build on what we have done with an example that flashes and swipes the 5 LEDs.
 */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
@@ -21,6 +21,7 @@
 volatile unsigned char buttons;		// This registers holds a copy of PINC when an external interrupt 6 has occurred.
 volatile unsigned char bToggle = 0;	// This registers is a boolean that is set when an interrupt 6 occurs and cleared when serviced in the code.
 //These registers is available outside of the main loop (i.e., to the interrupt handlers)
+volatile unsigned char LEDpattern, LEDperiod, LEDcountD;	// 3 bytes related to the 5 LEDs
 
 int initGPIO(void)
 {
@@ -55,9 +56,52 @@ int initTimer2()
 	return(2);
 }
 
+int  flashLEDs()
+{
+	unsigned char temp;			//Allocate a temporary byte. Note! it is not the same byte as the byte named temp in the main routine. Do not confuse them even if they have the same name.
+	if (LEDcountD != 0)
+	{
+		LEDcountD--;		// Decrement the countdown timer for another 5ms until it reaches 0
+	} 
+	else
+	{
+		LEDcountD = LEDperiod;	// Reset the countdown timer
+		temp = LEDpattern & 0b00011111;
+		switch (LEDpattern & 0b11100000)
+		{
+			case 0b10000000:
+				temp = temp<<1;
+				if (temp & 0b00100000)
+				{
+					temp |= 0b00000001;
+					temp &= ~0b00100000;	// Do not keep a bit set where there is supposed to be a flashing command
+				}
+				break;
+			case 0b01000000:
+				temp = ~temp;		// Invert the light pattern
+				temp &= 0b00011111;	// Clear the flashing command
+				break;
+			case 0b00100000:
+				if (temp & 0b00000001)
+				{
+						temp |= 0b00100000;
+				}
+				temp = temp>>1;
+				break;
+		}
+		LEDpattern = (LEDpattern & 0b11100000)|temp;	// Update the LEDpattern with the current pattern while keeping flashing commands
+		PORTG = (PORTG & 0x11111100) | (temp & 0b00000011);	//Update the 2 Port G LEDs
+		temp = temp >>2;
+		PORTC = (PORTC & 0b11111000) | temp;	//Update the 3 Port C LEDs
+	}
+}
+
 int main(void)
 {
 	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
+	LEDpattern = 0b01000100;
+	LEDperiod = 100;
+	LEDcountD = 0;
 	
 	temp = initGPIO();				// Set up the data direction register for both ports C and G
 	temp = initExtInt();			// Setup external interrupts
@@ -78,33 +122,43 @@ SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has be
 
 
 
-SIGNAL(SIG_OUTPUT_COMPARE2)
+SIGNAL(SIG_OUTPUT_COMPARE2) // This loop is executed every 5 ms (depending on the compare and match of timer 2)
 {	
-
 	if (bToggle)
 	{
 		switch(buttons & 0b11111000)
 		{
 			case 0b10000000:			//S5 center button
-			PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
+			//PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
+			LEDpattern = (LEDpattern & 0b00011111) | 0b01000000; // Swipe from Led1 to Led 5
+			LEDcountD = 0;				// Do it next time Flash is executed
 			break;
 			case 0b01000000:			//S4  upper button
-			PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
+			//PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
+			LEDperiod++;				// Increase the number of loops to blink
+			LEDcountD = 0;				// Do it next time Flash is executed
 			break;
 			case 0b00100000:			//S3 left button
-			PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
+			//PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
+			LEDpattern = (LEDpattern & 0b00011111) | 0b10000000; // Alternate the LEDS
+			LEDcountD = 0;				// Do it next time Flash is executed
 			break;
 			case 0b00010000:			//S2 lower button
-			PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
+			//PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
+			LEDperiod--;
+			LEDcountD = 0;				// Do it next time Flash is executed
 			break;
 			case 0b00001000:			//S1 right button
-			PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
+			//PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
+			LEDpattern = (LEDpattern & 0b00011111) | 0b00100000; // Swipe from Led5 to Led1
+			LEDcountD = 0;				// Do it next time Flash is executed
 			break;
 			default:
-			PORTC &= 0b11111000;	//Turn off Port C LEDs
-			PORTG &= 0x11111100;	//Turn off Port G LEDs
+			//PORTC &= 0b11111000;	//Turn off Port C LEDs
+			//PORTG &= 0x11111100;	//Turn off Port G LEDs
 			break;
 		}
 		bToggle = 0;
    }
+   flashLEDs();
 }
