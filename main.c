@@ -2,13 +2,14 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
- * Updated: 21-Dec-16
+ * Updated: 03-July-2017
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to build on what we have done with an example that flashes and swipes the 5 LEDs.
+ * The purpose of this version of the program is to use one of the Analog to Digital Converter (ADC) channel (ADC0).
+ * More information on interrupts can be found at http://www.avr-tutorials.com/interrupts/about-avr-8-bit-microcontrollers-interrupts and http://www.nongnu.org/avr-libc/user-manual/group__avr__interrupts.html 
 */
 
 #define DB_LED PB7	// Display Backlight's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
@@ -22,6 +23,9 @@ volatile unsigned char buttons;		// This registers holds a copy of PINC when an 
 volatile unsigned char bToggle = 0;	// This registers is a boolean that is set when an interrupt 6 occurs and cleared when serviced in the code.
 //These registers is available outside of the main loop (i.e., to the interrupt handlers)
 volatile unsigned char LEDpattern, LEDperiod, LEDcountD;	// 3 bytes related to the 5 LEDs
+
+volatile uint16_t adc_value;  //Allocate the double byte memory space into which the result of the 10 bits Analog to Digital Converter (ADC) is stored.
+
 
 int initGPIO(void)
 {
@@ -56,17 +60,33 @@ int initTimer2()
 	return(2);
 }
 
-int  flashLEDs()
-{
+int initADC(){
+	//Set up analog to digital conversion (ADC) 
+	//ADMUX register
+	//AVcc with external capacitor on AREF pin (the 2 following lines)
+	ADMUX &= ~(1<<REFS1);  //Clear REFS1 (although it should be 0 at reset)
+	ADMUX |= (1<<REFS0);   //Set REFS0  
+	ADMUX &= (0b11100000); //Single ended input on ADC0
+	ADMUX &= ~(1<<ADLAR);  //Making sure ADLAR is zero (somehow it was set to 1)
+	//The ACDC control and status register B ADCSRB
+	ADCSRB &= ~(1<<ADTS2) & ~(1<<ADTS1) & ~(1<<ADTS0);  //Free running mode
+	//The ADC control and status register A ADCSRA
+	ADCSRA |= (1<<ADPS2) | (1<<ADPS1) |(1<<ADPS0);//set sampling frequency pre-scaler to a division by 128
+	ADCSRA |= (1<<ADEN)  | (1<<ADATE) | (1<<ADIE);//enable ADC, able ADC auto trigger, enable ADC interrupt
+	return(0);
+}
+
+void  flashLEDs()		//This function will scroll or invert the 5 LEDs (5 LSB) based on the three MSB (scroll left, invert, scroll right).
+{	
 	unsigned char temp;			//Allocate a temporary byte. Note! it is not the same byte as the byte named temp in the main routine. Do not confuse them even if they have the same name.
 	if (LEDcountD != 0)
 	{
-		LEDcountD--;		// Decrement the countdown timer for another 5ms until it reaches 0
+		LEDcountD--;			// Decrement the countdown timer for another 5ms until it reaches 0
 	} 
 	else
 	{
-		LEDcountD = LEDperiod;	// Reset the countdown timer
-		temp = LEDpattern & 0b00011111;
+		LEDcountD = LEDperiod;	// Reset the countdown timer.
+		temp = LEDpattern & 0b00011111; // Save the LED pattern.
 		switch (LEDpattern & 0b11100000)
 		{
 			case 0b10000000:
@@ -74,12 +94,12 @@ int  flashLEDs()
 				if (temp & 0b00100000)
 				{
 					temp |= 0b00000001;
-					temp &= ~0b00100000;	// Do not keep a bit set where there is supposed to be a flashing command
+					temp &= ~0b00100000;	// Do not keep a bit set where there is supposed to be a flashing command.
 				}
 				break;
 			case 0b01000000:
-				temp = ~temp;		// Invert the light pattern
-				temp &= 0b00011111;	// Clear the flashing command
+				temp = ~temp;		// Invert the light pattern.
+				temp &= 0b00011111;	// Clear the flashing command.
 				break;
 			case 0b00100000:
 				if (temp & 0b00000001)
@@ -88,7 +108,10 @@ int  flashLEDs()
 				}
 				temp = temp>>1;
 				break;
-		}
+			default:
+				// Do nothing
+				break;
+	}
 		LEDpattern = (LEDpattern & 0b11100000)|temp;	// Update the LEDpattern with the current pattern while keeping flashing commands
 		PORTG = (PORTG & 0x11111100) | (temp & 0b00000011);	//Update the 2 Port G LEDs
 		temp = temp >>2;
@@ -96,21 +119,23 @@ int  flashLEDs()
 	}
 }
 
-int main(void)
-{
+int main(void){
 	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
-	LEDpattern = 0b01000100;
-	LEDperiod = 100;
+	
+	LEDpattern = 0b01000100;		// Flash the pattern the LED pattern 00100
+	LEDperiod = 100;				// LEDperiod x initTimer2 period.
 	LEDcountD = 0;
 	
 	temp = initGPIO();				// Set up the data direction register for both ports C and G
 	temp = initExtInt();			// Setup external interrupts
 	temp = initTimer2();			// Setup 5ms internal interrupt
+	temp = initADC();				// Setup the Analog to Digital Converter
+	ADCSRA |= (1<<ADSC);			//Start ADC
+
 	sei();							// Set Global Interrupts
 	
-	while(1)
-	{
-	temp++;
+	while(1){						// LOOP: does not do much more than increase temp.
+		temp++;
 	}			
 }
 
@@ -122,43 +147,34 @@ SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has be
 
 
 
-SIGNAL(SIG_OUTPUT_COMPARE2) // This loop is executed every 5 ms (depending on the compare and match of timer 2)
-{	
-	if (bToggle)
-	{
-		switch(buttons & 0b11111000)
-		{
-			case 0b10000000:			//S5 center button
-			//PORTC |= 0b00000100;	//Turn on Led5 if S5 is on
-			LEDpattern = (LEDpattern & 0b00011111) | 0b01000000; // Swipe from Led1 to Led 5
-			LEDcountD = 0;				// Do it next time Flash is executed
-			break;
-			case 0b01000000:			//S4  upper button
-			//PORTC |= 0b00000010;	 //Turn on Led4 if S4 is on
-			LEDperiod++;				// Increase the number of loops to blink
-			LEDcountD = 0;				// Do it next time Flash is executed
-			break;
-			case 0b00100000:			//S3 left button
-			//PORTC |= 0b00000001;	//Turn on Led3 if S3 is on
-			LEDpattern = (LEDpattern & 0b00011111) | 0b10000000; // Alternate the LEDS
-			LEDcountD = 0;				// Do it next time Flash is executed
-			break;
-			case 0b00010000:			//S2 lower button
-			//PORTG |= 0b00000010;	//Turn on Led2 if S2 is on
-			LEDperiod--;
-			LEDcountD = 0;				// Do it next time Flash is executed
-			break;
-			case 0b00001000:			//S1 right button
-			//PORTG |= 0b00000001;	//Turn on Led1 if S1 is on
-			LEDpattern = (LEDpattern & 0b00011111) | 0b00100000; // Swipe from Led5 to Led1
-			LEDcountD = 0;				// Do it next time Flash is executed
-			break;
-			default:
-			//PORTC &= 0b11111000;	//Turn off Port C LEDs
-			//PORTG &= 0x11111100;	//Turn off Port G LEDs
-			break;
+SIGNAL(SIG_OUTPUT_COMPARE2){ // This loop is executed every 5 ms (depending on the compare and match of timer 2)	
+	// Update the LED sequence
+	cli();					// Disable the global interrupts to prevent accidental corruption of the results while the two bytes.
+		if (adc_value>852){		
+			LEDpattern = 0b00011111;
+		} 
+		else if(adc_value>682){
+			LEDpattern = 0b00001111;
 		}
-		bToggle = 0;
-   }
+		else if(adc_value>511){
+			LEDpattern = 0b00000111;
+		}
+		else if(adc_value>341){
+			LEDpattern = 0b00000011;
+		}
+		else if(adc_value>170){
+			LEDpattern = 0b00000001;
+		}
+		else{
+			LEDpattern = 0b00000000;
+		};
+			 
+	sei();					// re-enable the global interrupts
+
    flashLEDs();
+}
+
+ISR(ADC_vect){
+	adc_value = ADCL;		//Load the low byte of the ADC result
+	adc_value += (ADCH<<8); //shift the high byte by 8bits to put the high byte in the variable
 }
