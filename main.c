@@ -2,19 +2,34 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
- * Updated: 04-July-2017
+ * Updated: 20-July-2017
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to introduce the liquid crystal display (LCD).
- * At the same time we introduce arrays (continuous memory of a given type) and characters (ASCII)
+ * The purpose of this version of the program is to introduce 
+ *	- pre-processor conditional statements,
+ *	- enumerations
+ *	- states and states machines
+ *  - and practice with ASCII operations.
 */
 
+#define DISPLAYLENGTH 16	/* number of characters on the display */
 #define DB_LED PB7	// Display Back-light's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
+#define TEDIT 0		// text edit flag position in stateFlags register
+
+#define LANG 'EN'
+#if LANG == 'SW'
+	#define GREETING "Hej! "
+#elif LANG == 'EN'
+	#define GREETING "Hello"
+#else
+	#define GREETING "Error"
+#endif
 
 #include <avr/io.h>	// Standard IO header file
+#include <stdlib.h>  /* This library is included for the atoi function to avoid the warning of implicit function declaration https://en.wikibooks.org/wiki/C_Programming/stdlib.h/atoi */
 #include <avr/pgmspace.h>	// Contains some type definitions and functions.
 #include <avr/interrupt.h>	// Contains ISR (Interrupt Service Routines) or interrupt handler details
 #include <string.h>
@@ -23,13 +38,18 @@
 #include "lcd.h"
 // The above files are located in the same folder as the current file. They are also added to the Solution Explorer.
 
+enum dStates {DBOOT, DADC, DTEXT, DUSART, DSPI, DI2C, DCAN};	/* enumeration of states (C programming, p) */
+#define DTOP DTEXT /* this needs to be updated when new states are added to enumeration of dState */
+char *dbStateName[] = {GREETING, "ADC", "Text"}; /* initialization of Pointer Array (C programming, p113) */
+	
+volatile unsigned int dbState, stateFlags;		/* display's state (activated by buttons)*/
 volatile unsigned char buttons;		// This registers holds a copy of PINC when an external interrupt 6 has occurred.
 volatile unsigned char bToggle = 0;	// This registers is a boolean that is set when an interrupt 6 occurs and cleared when serviced in the code.
-//These registers is available outside of the main loop (i.e., to the interrupt handlers)
 volatile unsigned char LEDpattern, LEDperiod, LEDcountD;	// 3 bytes related to the 5 LEDs
 
 volatile uint16_t adc_value;  //Allocate the double byte memory space into which the result of the 10 bits Analog to Digital Converter (ADC) is stored.
 
+/* the following functions are initialization functions (initF) called only once in the main() function */
 
 int initGPIO(void)
 {
@@ -82,12 +102,144 @@ int initADC(){
 
 int initDisplay(void)
 {
+	dbState = DBOOT;
+	stateFlags = 0;
 	lcdInit();	//initialize the LCD
 	lcdClear();	//clear the LCD
 	lcdHome();	//go to the home of the LCD
-	lcdPrintData("ADC", 3); //Display the text on the LCD
+	lcdPrintData(GREETING, strlen(GREETING)); //Display the text on the LCD
 	return(1);
 }
+
+/* end of the initialization functions, begin with functions called */
+
+int dbStateUp(void)
+{
+	if (++dbState > DTOP)
+		dbState = DADC;
+	lcdClear();	//clear the LCD
+	lcdHome();	//go to the home of the LCD
+	lcdPrintData(dbStateName[dbState], strlen(dbStateName[dbState])); //Display the text on the LCD
+	return 0;
+}
+
+int dbStateDown(void)
+{
+	if (dbState-- <= DADC)
+		dbState = DTOP;
+	lcdClear();	//clear the LCD
+	lcdHome();	//go to the home of the LCD
+	lcdPrintData(dbStateName[dbState], strlen(dbStateName[dbState])); //Display the text on the LCD
+	return 0;
+}
+
+int DbBOOThandler(void)
+{
+	switch(buttons & 0b11111000){
+		case 0b10000000:			//S5 center button
+			/* do nothing */
+			break;
+		case 0b01000000:			//S4  upper button
+			dbStateUp();
+			break;
+		case 0b00100000:			//S3 left button
+			/* do nothing */
+			break;
+		case 0b00010000:			//S2 lower button
+			dbStateDown();
+			break;
+		case 0b00001000:			//S1 right button
+			/* do nothing */
+			break;
+		default:
+			/* button released, do nothing */
+			break;
+	}
+	return 0;
+}
+
+int DbADChandler(void)
+{
+	switch(buttons & 0b11111000){
+		case 0b10000000:			//S5 center button
+			/* do nothing */
+			break;
+		case 0b01000000:			//S4  upper button
+			dbStateUp();
+			break;
+		case 0b00100000:			//S3 left button
+			/* change channel using ADMUX */
+			break;
+		case 0b00010000:			//S2 lower button
+			dbStateDown();
+			break;
+		case 0b00001000:			//S1 right button
+			/* change channel using ADMUX */			
+			break;
+		default:
+			/* do nothing */
+		break;
+	}
+	return 0;
+}
+
+unsigned int DbTEXThandler(char *s, unsigned int position)
+{
+	switch(buttons & 0b11111000)
+	{
+		case 0b10000000:			//S5 center button
+			if (stateFlags & (1<<TEDIT)){
+					stateFlags &= ~(1<<TEDIT);	/* exit text edit mode */
+			} 
+			else {
+					stateFlags |= (1<<TEDIT);	/* enter text edit mode */
+			}
+			break;
+		case 0b01000000:			//S4  upper button
+			if (stateFlags & (1<<TEDIT)){
+				if (s[position] < 'z')	// if you did not reach the ASCII letter z or 0x7A, you can go to the next letter in the table
+				{
+					s[position]++;
+				}
+			}
+			else {
+				dbStateUp();
+			}
+			break;
+		case 0b00100000:			//S3 left button
+			if (stateFlags & (1<<TEDIT)){
+					if (position > 0) {		//If you have not reached the right side of the display, you can move the cursor one step to the right
+						position--;
+					}
+			}
+			break;
+		case 0b00010000:			//S2 lower button
+			if (stateFlags & (1<<TEDIT)){
+				if (s[position] > 'A')	// if you did not reach the ASCII letter A, you can go to the previous letter in the table
+				{
+					s[position]--;
+				}
+			}
+			else {
+				dbStateDown();
+			}
+			break;
+		case 0b00001000:			//S1 right button
+			if (stateFlags & (1<<TEDIT)){
+				if (position < (DISPLAYLENGTH-1))		//If you have not reached the right side of the display with index starting at 0, you can move the cursor one step to the right
+					{
+						position++;
+						s[position] = 'A';
+						s[position+1] ='\0';
+					}
+			}		
+			break;
+		default:
+			break;
+	}
+	return position;
+}
+
 
 void  flashLEDs()		//This function will scroll or invert the 5 LEDs (5 LSB) based on the three MSB (scroll left, invert, scroll right).
 {	
@@ -135,7 +287,11 @@ void  flashLEDs()		//This function will scroll or invert the 5 LEDs (5 LSB) base
 int main(void){
 	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
 	 char text[10];					//Allocate an array of 10 bytes to store text
-
+	 
+	char cursor = 0;				/* allocate a variable to keep track of the cursor position and initialize it to 0 */
+	char tLine[DISPLAYLENGTH + 1];	/* allocate a consecutive array of 16 characters where your text will be stored with an end of string */
+	tLine[0] = 'A';					/* initialize the first ASCII character to A or 0x41 */
+	tLine[1] = '\0';				/* initialize the second character to be an end of text string */
 	
 	LEDpattern = 0b01000100;		// Flash the pattern the LED pattern 00100
 	LEDperiod = 100;				// LEDperiod x initTimer2 period.
@@ -153,14 +309,41 @@ int main(void){
 	while(1){						// LOOP: does not do much more than increase temp.
 		temp++;
 		ADCSRA &= ~(1<<ADIE);      //disable ADC interrupt to prevent value update during the conversion
-		itoa(adc_value, &text[0], 10);  //Convert the unsigned integer to an ascii string; look at 3.6 "The C programming language"
+		itoa(adc_value, text, 9);  //Convert the unsigned integer to an ascii string; look at 3.6 "The C programming language"
 		ADCSRA |= (1<<ADIE);      //re-enable ADC interrupt
-		lcdGotoXY(5, 1);     //Position the cursor on
-		lcdPrintData("      ", 6); //Clear the lower part of the LCD
-		lcdGotoXY(5, 1);     //Position the cursor on
-		lcdPrintData(&text, strlen(&text[0])); //Display the text on the LCD
+		if (bToggle){		//This is set to true only in the interrupt service routine at the bottom of the code
+			switch (dbState){
+				case DBOOT:
+					DbBOOThandler();
+					break;
+				case DADC:
+					DbADChandler();
+					break;
+				case DTEXT:
+					cursor = DbTEXThandler(tLine, cursor);
+					break;
+				default:
+					break;
+			}
+			bToggle = 0;			//
+		}
+		if (dbState == DTEXT){
+			lcdGotoXY(0, 1);     //Position the cursor on
+			lcdPrintData(tLine, strlen(tLine)); //Display the text on the LCD
+		} 
+		else
+		{
+			lcdGotoXY(5, 1);     //Position the cursor on
+			lcdPrintData("      ", 6); //Clear the lower part of the LCD
+			lcdGotoXY(5, 1);     //Position the cursor on
+			lcdPrintData(text, strlen(text)); //Display the text on the LCD
+		}
+
 	}			
 }
+
+
+/* the functions below are Interrupt Service Routines, they are never called by software */
 
 SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has been generated. It is kept short.
 {
@@ -169,28 +352,28 @@ SIGNAL(SIG_INTERRUPT6)  //Execute the following code if an INT6 interrupt has be
 }
 
 
-
 SIGNAL(SIG_OUTPUT_COMPARE2){ // This loop is executed every 5 ms (depending on the compare and match of timer 2)	
 	// Update the LED sequence
 	cli();					// Disable the global interrupts to prevent accidental corruption of the results while the two bytes.
-		if (adc_value>852){		
-			LEDpattern = 0b00011111;
-		} 
-		else if(adc_value>682){
-			LEDpattern = 0b00001111;
-		}
-		else if(adc_value>511){
-			LEDpattern = 0b00000111;
-		}
-		else if(adc_value>341){
-			LEDpattern = 0b00000011;
-		}
-		else if(adc_value>170){
-			LEDpattern = 0b00000001;
-		}
-		else{
-			LEDpattern = 0b00000000;
-		};
+	
+	if (adc_value>852){		
+		LEDpattern = 0b00011111;
+	} 
+	else if(adc_value>682){
+		LEDpattern = 0b00001111;
+	}
+	else if(adc_value>511){
+		LEDpattern = 0b00000111;
+	}
+	else if(adc_value>341){
+		LEDpattern = 0b00000011;
+	}
+	else if(adc_value>170){
+		LEDpattern = 0b00000001;
+	}
+	else{
+		LEDpattern = 0b00000000;
+	};
 			 
 	sei();					// re-enable the global interrupts
 
