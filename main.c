@@ -9,20 +9,16 @@
 /*
  * Purpose of this version:
  * The purpose of this version of the program is to introduce 
- *	- pre-processor conditional statements,
- *	- enumerations
- *	- states and states machines
- *  - and practice with ASCII operations.
+ *	Introduce serial communication with USART
 */
 
 #define DISPLAYLENGTH 16	/* number of characters on the display */
 #define DB_LED PB7	// Display Back-light's LED is on Port B, pin 7. This is a command to the compiler pre-processor.
-#define TEDIT 0		// text edit flag position in stateFlags register
 
-#define LANG 'EN'
-#if LANG == 'SW'
+#define LANG 1
+#if LANG == 0
 	#define GREETING "Hej! "
-#elif LANG == 'EN'
+#elif LANG == 1
 	#define GREETING "Hello"
 #else
 	#define GREETING "Error"
@@ -38,11 +34,12 @@
 #include "lcd.h"
 // The above files are located in the same folder as the current file. They are also added to the Solution Explorer.
 
-enum dStates {DBOOT, DADC, DTEXT, DUSART, DSPI, DI2C, DCAN};	/* enumeration of states (C programming, p) */
+enum dStates {DBOOT, DADC, DUART, DTEXT, DSPI, DI2C, DCAN};	/* enumeration of states (C programming, p) */
 #define DTOP DTEXT /* this needs to be updated when new states are added to enumeration of dState */
-char *dbStateName[] = {GREETING, "ADC", "Text"}; /* initialization of Pointer Array (C programming, p113) */
+enum subMode {NORMAL, TEDIT, UECHO};
+char *dbStateName[] = {GREETING, "ADC", "USART", "Text"}; /* initialization of Pointer Array (C programming, p113) */
 	
-volatile unsigned int dbState, stateFlags;		/* display's state (activated by buttons)*/
+volatile unsigned int dbState, subState;		/* display's state (activated by buttons)*/
 volatile unsigned char buttons;		// This registers holds a copy of PINC when an external interrupt 6 has occurred.
 volatile unsigned char bToggle = 0;	// This registers is a boolean that is set when an interrupt 6 occurs and cleared when serviced in the code.
 volatile unsigned char LEDpattern, LEDperiod, LEDcountD;	// 3 bytes related to the 5 LEDs
@@ -103,7 +100,7 @@ int initADC(){
 int initDisplay(void)
 {
 	dbState = DBOOT;
-	stateFlags = 0;
+	subState = NORMAL;
 	lcdInit();	//initialize the LCD
 	lcdClear();	//clear the LCD
 	lcdHome();	//go to the home of the LCD
@@ -111,7 +108,85 @@ int initDisplay(void)
 	return(1);
 }
 
+/*! \brief Initializes the USART for the communication bus 
+ * This function is used to initialize the USART which a baudrate
+ * that needs to be sent in as a parameter Use the baudrate settings
+ * specified in the ATMEGA128 baudrate setting.
+ * \param baud The baudrate param from the ATMEGA32 datasheet.
+ */
+void usart1_init(unsigned int baudrate) {
+	/* Set baud rate */
+	UBRR1H = (unsigned char) (baudrate>>8);
+	UBRR1L = (unsigned char) baudrate;
+	/* Set frame format: 8data, no parity & 1 stop bits */
+	UCSR1C = (0<<UMSEL0) | (0<<USBS0) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCSZ2);
+	/* Enable receiver, transmitter and receive interrupt */
+	UCSR1B = (1<<RXEN1) | (1<<TXEN1);// | (1<<RXCIE1);
+}
+
 /* end of the initialization functions, begin with functions called */
+
+/*! \brief Send a character to the USART
+ * Send a single character to the USART used for the communication bus
+ * \param data The character you want to send
+ */
+unsigned char usart1_transmit(char  data ) {
+	/* Wait for empty transmit buffer */
+	while (!( UCSR1A & (1<<UDRE1)));
+	/* Put data into buffer, sends the data */
+	UDR1 = data;
+	return 0;
+}
+
+/*! \brief Send a string of characters to the USART
+ * Send a string of characters to the USART used for the communication bus
+ * \param data The string of characters you wish to send
+ * \param length The length of the string you wish to send
+ */
+unsigned char usart1_sendstring(char *data,unsigned char length) {
+	int i;
+	for (i=0;i<length;i++)
+		usart1_transmit(*(data++));
+	
+	return 0;
+}
+
+/*! \brief Retrieve one character from the USART
+ * Retrieve one character from the USART. This function will wait until
+ * there is a character in the USART RX buffer
+ * \return The character from the RX USART buffer
+ */
+unsigned char usart1_receive(void ) {
+	/* Wait for data to be received */
+	while (!(UCSR1A & (1<<RXC1)));
+	/* Get and return received data from buffer */
+	return UDR1;
+}
+
+/*! \brief The USART receive loopback
+ * This function does wait for a character in the RX buffer and returns
+ * it to the transmit buffer.
+ * \return The character from the RX USART buffer
+ */
+unsigned char usart1_receive_loopback(void ) {
+	uint8_t rbuff;
+	/* Wait for data to be received */
+	while (!(UCSR1A & (1<<RXC1)));
+	/* Get and return received data from buffer */
+	rbuff = UDR1;
+	usart1_transmit(rbuff);
+	return rbuff;
+}
+
+/*! \brief Retrieve one character from the USART
+ * Retrieve one character from the USART. With this function you will
+ * need to poll the USART, it does NOT wait until a character is in the buffer.
+ * \return The character from the RX USART buffer
+ */
+unsigned char poll_usart1_receive(void ) {
+	/* Check if data is received */
+	return ((UCSR1A & (1<<RXC1)));
+}
 
 int dbStateUp(void)
 {
@@ -183,63 +258,105 @@ int DbADChandler(void)
 	return 0;
 }
 
-unsigned int DbTEXThandler(char *s, unsigned int position)
+
+int DbUSARThandler(void)
 {
-	switch(buttons & 0b11111000)
-	{
+	switch(buttons & 0b11111000){
 		case 0b10000000:			//S5 center button
-			if (stateFlags & (1<<TEDIT)){
-					stateFlags &= ~(1<<TEDIT);	/* exit text edit mode */
-			} 
-			else {
-					stateFlags |= (1<<TEDIT);	/* enter text edit mode */
+			if (subState == NORMAL)
+			{
+				subState = UECHO;
+				lcdGotoXY(8,0);     //Position the cursor on first line 8th position
+				lcdPrintData("echo  ", 6); //Clear the lower part of the LCD
 			}
 			break;
 		case 0b01000000:			//S4  upper button
-			if (stateFlags & (1<<TEDIT)){
-				if (s[position] < 'z')	// if you did not reach the ASCII letter z or 0x7A, you can go to the next letter in the table
-				{
-					s[position]++;
-				}
+			dbStateUp();
+			break;
+		case 0b00100000:			//S3 left button
+			/* do nothing */
+			break;
+		case 0b00010000:			//S2 lower button
+			dbStateDown();
+			break;
+		case 0b00001000:			//S1 right button
+			/* do nothing */
+			break;
+		default:
+			/* button released, do nothing */
+			break;
+	}
+	return 0;
+}
+
+
+unsigned int DbTEXThandler(char *s, unsigned int position)
+{
+	switch(buttons & 0b11111000){
+		case 0b10000000:			//S5 center button
+			if (subState == NORMAL)
+			{
+				subState = TEDIT;
+				lcdGotoXY(8,0);     //Position the cursor on first line 8th position
+				lcdPrintData("input ", 6); //Clear the lower part of the LCD
 			}
-			else {
+			else
+			{
+				subState = NORMAL;
+				usart1_transmit('\r');
+				usart1_sendstring(s, strlen(s));	/* transmit over USART 1 the string s */
+				usart1_transmit('\n');
+				lcdGotoXY(8,0);     //Position the cursor on first line 8th position
+				lcdPrintData("      ", 6); //Clear the lower part of the LCD
+			}		
+			break;
+		case 0b01000000:			//S4  upper button
+			if (subState == TEDIT)
+			{
+				if (s[position] < 'z')	// if you did not reach the ASCII letter z or 0x7A, you can go to the next letter in the table
+				s[position]++;
+			}
+			else
+			{
 				dbStateUp();
 			}
 			break;
 		case 0b00100000:			//S3 left button
-			if (stateFlags & (1<<TEDIT)){
-					if (position > 0) {		//If you have not reached the right side of the display, you can move the cursor one step to the right
-						position--;
-					}
+			if (subState == TEDIT)
+			{
+				if (position > 0)		//If you have not reached the right side of the display, you can move the cursor one step to the right
+				{
+					position--;
+				}
 			}
 			break;
 		case 0b00010000:			//S2 lower button
-			if (stateFlags & (1<<TEDIT)){
+			if (subState == TEDIT)
+			{
 				if (s[position] > 'A')	// if you did not reach the ASCII letter A, you can go to the previous letter in the table
 				{
 					s[position]--;
 				}
 			}
-			else {
+			else
+			{
 				dbStateDown();
 			}
 			break;
 		case 0b00001000:			//S1 right button
-			if (stateFlags & (1<<TEDIT)){
-				if (position < (DISPLAYLENGTH-1))		//If you have not reached the right side of the display with index starting at 0, you can move the cursor one step to the right
-					{
-						position++;
-						s[position] = 'A';
-						s[position+1] ='\0';
-					}
-			}		
+			if ((subState == TEDIT) && (position < DISPLAYLENGTH-1))		//If you have not reached the right side of the display with index starting at 0, you can move the cursor one step to the right
+			{
+				position++;
+				s[position] = 'A';
+				s[position+1] ='\0';
+			}
 			break;
 		default:
-			break;
+		/* button released, do nothing */
+		break;
 	}
 	return position;
 }
-
 
 void  flashLEDs()		//This function will scroll or invert the 5 LEDs (5 LSB) based on the three MSB (scroll left, invert, scroll right).
 {	
@@ -286,9 +403,10 @@ void  flashLEDs()		//This function will scroll or invert the 5 LEDs (5 LSB) base
 
 int main(void){
 	unsigned char temp = 0x0F;		// Allocate memory for temp. It is initialized to 15 for demonstration purposes only.
-	 char text[10];					//Allocate an array of 10 bytes to store text
+	 char text[10],uText[10];					//Allocate an array of 10 bytes to store text
+	 unsigned char textEcho, i;
 	 
-	char cursor = 0;				/* allocate a variable to keep track of the cursor position and initialize it to 0 */
+	unsigned char cursor = 0;				/* allocate a variable to keep track of the cursor position and initialize it to 0 */
 	char tLine[DISPLAYLENGTH + 1];	/* allocate a consecutive array of 16 characters where your text will be stored with an end of string */
 	tLine[0] = 'A';					/* initialize the first ASCII character to A or 0x41 */
 	tLine[1] = '\0';				/* initialize the second character to be an end of text string */
@@ -302,22 +420,29 @@ int main(void){
 	temp = initTimer2();			// Setup 5ms internal interrupt
 	temp = initADC();				// Setup the Analog to Digital Converter
 	temp = initDisplay();
+	usart1_init(51);				//BAUDRATE_19200 (look at page s183 and 203)
+
 	
 	ADCSRA |= (1<<ADSC);			//Start ADC
 	sei();							// Set Global Interrupts
 	
 	while(1){						// LOOP: does not do much more than increase temp.
 		temp++;
-		ADCSRA &= ~(1<<ADIE);      //disable ADC interrupt to prevent value update during the conversion
-		itoa(adc_value, text, 9);  //Convert the unsigned integer to an ascii string; look at 3.6 "The C programming language"
-		ADCSRA |= (1<<ADIE);      //re-enable ADC interrupt
-		if (bToggle){		//This is set to true only in the interrupt service routine at the bottom of the code
+		ADCSRA &= ~(1<<ADIE);		//disable ADC interrupt to prevent value update during the conversion
+		itoa(adc_value, text, 9);	//Convert the unsigned integer to an ascii string; look at 3.6 "The C programming language"
+		ADCSRA |= (1<<ADIE);		//re-enable ADC interrupt
+		if (bToggle)			//This is set to true only in the interrupt service routine at the bottom of the code
+		{
 			switch (dbState){
 				case DBOOT:
 					DbBOOThandler();
 					break;
 				case DADC:
 					DbADChandler();
+					break;
+				case DUART:
+					DbUSARThandler();
+					i = 0;
 					break;
 				case DTEXT:
 					cursor = DbTEXThandler(tLine, cursor);
@@ -327,16 +452,52 @@ int main(void){
 			}
 			bToggle = 0;			//
 		}
-		if (dbState == DTEXT){
+		
+		if (dbState == DTEXT)
+		{
 			lcdGotoXY(0, 1);     //Position the cursor on
 			lcdPrintData(tLine, strlen(tLine)); //Display the text on the LCD
 		} 
+		else if (dbState == DUART)
+		{
+			if (subState == UECHO)
+			{
+				if (i < 10)
+				{
+					textEcho = usart1_receive();
+					if ((textEcho == '\r') || (textEcho == '\n'))
+					{
+						subState = NORMAL;
+					}
+					else
+					{
+						usart1_transmit(textEcho);
+						uText[i] = textEcho;
+						uText[++i] = '\0';
+						lcdGotoXY(0, 1);     //Position the cursor on
+						lcdPrintData(uText, strlen(uText)); //Display the text on the LCD
+					}
+				}
+				else
+				{
+					subState = NORMAL;
+				}	
+			}
+			else
+			{
+				lcdGotoXY(8,0);     //Position the cursor on first line 8th position
+				lcdPrintData("      ", 6); //Clear the lower part of the LCD
+			}
+		}
 		else
 		{
 			lcdGotoXY(5, 1);     //Position the cursor on
 			lcdPrintData("      ", 6); //Clear the lower part of the LCD
 			lcdGotoXY(5, 1);     //Position the cursor on
 			lcdPrintData(text, strlen(text)); //Display the text on the LCD
+			usart1_sendstring(text, strlen(text));	/* transmit over USART 1 the value of the ADC */
+			usart1_transmit('\n');
+			usart1_transmit('\r');
 		}
 
 	}			
