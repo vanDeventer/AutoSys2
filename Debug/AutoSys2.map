@@ -26,10 +26,10 @@ Common symbol       size              file
 
 dbState             0x2               main.o
 LEDperiod           0x1               main.o
+subState            0x2               main.o
 adc_value           0x2               main.o
 LEDpattern          0x1               main.o
 buttons             0x1               main.o
-stateFlags          0x2               main.o
 LEDcountD           0x1               main.o
 
 Discarded input sections
@@ -50,6 +50,10 @@ Discarded input sections
  .text          0x00000000        0x0 main.o
  .data          0x00000000        0x0 main.o
  .bss           0x00000000        0x0 main.o
+ .text.usart1_receive_loopback
+                0x00000000       0x32 main.o
+ .text.poll_usart1_receive
+                0x00000000       0x18 main.o
  .text          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_udivmodhi4.o)
  .data          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_udivmodhi4.o)
  .bss           0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_udivmodhi4.o)
@@ -272,7 +276,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x00000000      0xf64
+.text           0x00000000     0x11bc
  *(.vectors)
  .vectors       0x00000000       0x94 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.0.106/gcc/dev/at90can128/avr51/crtat90can128.o
                 0x00000000                __vector_default
@@ -330,145 +334,160 @@ END GROUP
  *(.init8)
  *(.init8)
  *(.init9)
- .init9         0x00000152        0x4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.0.106/gcc/dev/at90can128/avr51/crtat90can128.o
+ .init9         0x00000152        0x6 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.0.106/gcc/dev/at90can128/avr51/crtat90can128.o
  *(.init9)
  *(.text)
- .text          0x00000156        0x2 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.0.106/gcc/dev/at90can128/avr51/crtat90can128.o
-                0x00000156                __vector_22
-                0x00000156                __vector_28
-                0x00000156                __vector_1
-                0x00000156                __vector_32
-                0x00000156                __vector_34
-                0x00000156                __vector_24
-                0x00000156                __vector_12
-                0x00000156                __bad_interrupt
-                0x00000156                __vector_6
-                0x00000156                __vector_31
-                0x00000156                __vector_35
-                0x00000156                __vector_3
-                0x00000156                __vector_23
-                0x00000156                __vector_30
-                0x00000156                __vector_11
-                0x00000156                __vector_13
-                0x00000156                __vector_17
-                0x00000156                __vector_19
-                0x00000156                __vector_27
-                0x00000156                __vector_5
-                0x00000156                __vector_33
-                0x00000156                __vector_4
-                0x00000156                __vector_2
-                0x00000156                __vector_21
-                0x00000156                __vector_15
-                0x00000156                __vector_36
-                0x00000156                __vector_29
-                0x00000156                __vector_8
-                0x00000156                __vector_26
-                0x00000156                __vector_14
-                0x00000156                __vector_10
-                0x00000156                __vector_16
-                0x00000156                __vector_18
-                0x00000156                __vector_20
-                0x00000158                . = ALIGN (0x2)
+ .text          0x00000158        0x2 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.0.106/gcc/dev/at90can128/avr51/crtat90can128.o
+                0x00000158                __vector_22
+                0x00000158                __vector_28
+                0x00000158                __vector_1
+                0x00000158                __vector_32
+                0x00000158                __vector_34
+                0x00000158                __vector_24
+                0x00000158                __vector_12
+                0x00000158                __bad_interrupt
+                0x00000158                __vector_6
+                0x00000158                __vector_31
+                0x00000158                __vector_35
+                0x00000158                __vector_3
+                0x00000158                __vector_23
+                0x00000158                __vector_30
+                0x00000158                __vector_11
+                0x00000158                __vector_13
+                0x00000158                __vector_17
+                0x00000158                __vector_19
+                0x00000158                __vector_27
+                0x00000158                __vector_5
+                0x00000158                __vector_33
+                0x00000158                __vector_4
+                0x00000158                __vector_2
+                0x00000158                __vector_21
+                0x00000158                __vector_15
+                0x00000158                __vector_36
+                0x00000158                __vector_29
+                0x00000158                __vector_8
+                0x00000158                __vector_26
+                0x00000158                __vector_14
+                0x00000158                __vector_10
+                0x00000158                __vector_16
+                0x00000158                __vector_18
+                0x00000158                __vector_20
+                0x0000015a                . = ALIGN (0x2)
  *(.text.*)
  .text.delay_ms
-                0x00000158       0x40 delay.o
-                0x00000158                delay_ms
+                0x0000015a       0x40 delay.o
+                0x0000015a                delay_ms
  .text.lcdInitHW
-                0x00000198       0x8e lcd.o
-                0x00000198                lcdInitHW
+                0x0000019a       0x8e lcd.o
+                0x0000019a                lcdInitHW
  .text.lcdBusyWait
-                0x00000226       0xba lcd.o
-                0x00000226                lcdBusyWait
+                0x00000228       0xba lcd.o
+                0x00000228                lcdBusyWait
  .text.lcdControlWrite
-                0x000002e0       0x92 lcd.o
-                0x000002e0                lcdControlWrite
+                0x000002e2       0x92 lcd.o
+                0x000002e2                lcdControlWrite
  .text.lcdControlRead
-                0x00000372       0x84 lcd.o
-                0x00000372                lcdControlRead
+                0x00000374       0x84 lcd.o
+                0x00000374                lcdControlRead
  .text.lcdDataWrite
-                0x000003f6       0x92 lcd.o
-                0x000003f6                lcdDataWrite
- .text.lcdInit  0x00000488       0x80 lcd.o
-                0x00000488                lcdInit
- .text.lcdHome  0x00000508       0x14 lcd.o
-                0x00000508                lcdHome
+                0x000003f8       0x92 lcd.o
+                0x000003f8                lcdDataWrite
+ .text.lcdInit  0x0000048a       0x80 lcd.o
+                0x0000048a                lcdInit
+ .text.lcdHome  0x0000050a       0x14 lcd.o
+                0x0000050a                lcdHome
  .text.lcdClear
-                0x0000051c       0x14 lcd.o
-                0x0000051c                lcdClear
+                0x0000051e       0x14 lcd.o
+                0x0000051e                lcdClear
  .text.lcdGotoXY
-                0x00000530       0x66 lcd.o
-                0x00000530                lcdGotoXY
+                0x00000532       0x66 lcd.o
+                0x00000532                lcdGotoXY
  .text.lcdLoadCustomChar
-                0x00000596       0x92 lcd.o
-                0x00000596                lcdLoadCustomChar
+                0x00000598       0x92 lcd.o
+                0x00000598                lcdLoadCustomChar
  .text.lcdPrintData
-                0x00000628       0x50 lcd.o
-                0x00000628                lcdPrintData
+                0x0000062a       0x50 lcd.o
+                0x0000062a                lcdPrintData
  .text.initGPIO
-                0x00000678       0x40 main.o
-                0x00000678                initGPIO
+                0x0000067a       0x40 main.o
+                0x0000067a                initGPIO
  .text.initExtInt
-                0x000006b8       0x36 main.o
-                0x000006b8                initExtInt
+                0x000006ba       0x36 main.o
+                0x000006ba                initExtInt
  .text.initTimer2
-                0x000006ee       0x4a main.o
-                0x000006ee                initTimer2
- .text.initADC  0x00000738       0x90 main.o
-                0x00000738                initADC
+                0x000006f0       0x4a main.o
+                0x000006f0                initTimer2
+ .text.initADC  0x0000073a       0x90 main.o
+                0x0000073a                initADC
  .text.initDisplay
-                0x000007c8       0x30 main.o
-                0x000007c8                initDisplay
+                0x000007ca       0x30 main.o
+                0x000007ca                initDisplay
+ .text.usart1_init
+                0x000007fa       0x48 main.o
+                0x000007fa                usart1_init
+ .text.usart1_transmit
+                0x00000842       0x36 main.o
+                0x00000842                usart1_transmit
+ .text.usart1_sendstring
+                0x00000878       0x5a main.o
+                0x00000878                usart1_sendstring
+ .text.usart1_receive
+                0x000008d2       0x24 main.o
+                0x000008d2                usart1_receive
  .text.dbStateUp
-                0x000007f8       0x6c main.o
-                0x000007f8                dbStateUp
+                0x000008f6       0x6c main.o
+                0x000008f6                dbStateUp
  .text.dbStateDown
-                0x00000864       0x70 main.o
-                0x00000864                dbStateDown
+                0x00000962       0x70 main.o
+                0x00000962                dbStateDown
  .text.DbBOOThandler
-                0x000008d4       0x56 main.o
-                0x000008d4                DbBOOThandler
+                0x000009d2       0x56 main.o
+                0x000009d2                DbBOOThandler
  .text.DbADChandler
-                0x0000092a       0x56 main.o
-                0x0000092a                DbADChandler
+                0x00000a28       0x56 main.o
+                0x00000a28                DbADChandler
+ .text.DbUSARThandler
+                0x00000a7e       0x7e main.o
+                0x00000a7e                DbUSARThandler
  .text.DbTEXThandler
-                0x00000980      0x196 main.o
-                0x00000980                DbTEXThandler
+                0x00000afc      0x1a6 main.o
+                0x00000afc                DbTEXThandler
  .text.flashLEDs
-                0x00000b16       0xe8 main.o
-                0x00000b16                flashLEDs
- .text.main     0x00000bfe      0x124 main.o
-                0x00000bfe                main
+                0x00000ca2       0xe8 main.o
+                0x00000ca2                flashLEDs
+ .text.main     0x00000d8a      0x1f0 main.o
+                0x00000d8a                main
  .text.__vector_7
-                0x00000d22       0x54 main.o
-                0x00000d22                __vector_7
+                0x00000f7a       0x54 main.o
+                0x00000f7a                __vector_7
  .text.__vector_9
-                0x00000d76       0xda main.o
-                0x00000d76                __vector_9
+                0x00000fce       0xda main.o
+                0x00000fce                __vector_9
  .text.__vector_25
-                0x00000e50       0x84 main.o
-                0x00000e50                __vector_25
+                0x000010a8       0x84 main.o
+                0x000010a8                __vector_25
  .text.avr-libc
-                0x00000ed4       0x12 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(strlen.o)
-                0x00000ed4                strlen
+                0x0000112c       0x12 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(strlen.o)
+                0x0000112c                strlen
  .text.avr-libc
-                0x00000ee6       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(itoa.o)
-                0x00000ee6                __itoa
-                0x00000ee6                itoa
+                0x0000113e       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(itoa.o)
+                0x0000113e                __itoa
+                0x0000113e                itoa
  .text.avr-libc
-                0x00000efa       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(itoa_ncheck.o)
-                0x00000efa                __itoa_ncheck
+                0x00001152       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(itoa_ncheck.o)
+                0x00001152                __itoa_ncheck
  .text.avr-libc
-                0x00000f0e       0x32 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(utoa_ncheck.o)
-                0x00000f0e                __utoa_ncheck
-                0x00000f10                __utoa_common
+                0x00001166       0x32 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(utoa_ncheck.o)
+                0x00001166                __utoa_ncheck
+                0x00001168                __utoa_common
  .text.avr-libc
-                0x00000f40       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(strrev.o)
-                0x00000f40                strrev
-                0x00000f60                . = ALIGN (0x2)
+                0x00001198       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr51\libc.a(strrev.o)
+                0x00001198                strrev
+                0x000011b8                . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x00000f60        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_exit.o)
-                0x00000f60                _exit
-                0x00000f60                exit
+ .fini9         0x000011b8        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_exit.o)
+                0x000011b8                _exit
+                0x000011b8                exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -487,49 +506,49 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x00000f60        0x4 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_exit.o)
+ .fini0         0x000011b8        0x4 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr51\libgcc.a(_exit.o)
  *(.fini0)
-                0x00000f64                _etext = .
+                0x000011bc                _etext = .
 
-.data           0x00800100       0x1c load address 0x00000f64
+.data           0x00800100       0x32 load address 0x000011bc
                 0x00800100                PROVIDE (__data_start, .)
  *(.data)
  *(.data*)
  .data.dbStateName
-                0x00800100        0x6 main.o
+                0x00800100        0x8 main.o
                 0x00800100                dbStateName
  *(.rodata)
- .rodata        0x00800106       0x16 main.o
+ .rodata        0x00800108       0x2a main.o
  *(.rodata*)
  *(.gnu.linkonce.d*)
-                0x0080011c                . = ALIGN (0x2)
-                0x0080011c                _edata = .
-                0x0080011c                PROVIDE (__data_end, .)
+                0x00800132                . = ALIGN (0x2)
+                0x00800132                _edata = .
+                0x00800132                PROVIDE (__data_end, .)
 
-.bss            0x0080011c        0xb
-                0x0080011c                PROVIDE (__bss_start, .)
+.bss            0x00800132        0xb
+                0x00800132                PROVIDE (__bss_start, .)
  *(.bss)
  *(.bss*)
- .bss.bToggle   0x0080011c        0x1 main.o
-                0x0080011c                bToggle
+ .bss.bToggle   0x00800132        0x1 main.o
+                0x00800132                bToggle
  *(COMMON)
- COMMON         0x0080011d        0xa main.o
-                0x0080011d                dbState
-                0x0080011f                LEDperiod
-                0x00800120                adc_value
-                0x00800122                LEDpattern
-                0x00800123                buttons
-                0x00800124                stateFlags
-                0x00800126                LEDcountD
-                0x00800127                PROVIDE (__bss_end, .)
-                0x00000f64                __data_load_start = LOADADDR (.data)
-                0x00000f80                __data_load_end = (__data_load_start + SIZEOF (.data))
+ COMMON         0x00800133        0xa main.o
+                0x00800133                dbState
+                0x00800135                LEDperiod
+                0x00800136                subState
+                0x00800138                adc_value
+                0x0080013a                LEDpattern
+                0x0080013b                buttons
+                0x0080013c                LEDcountD
+                0x0080013d                PROVIDE (__bss_end, .)
+                0x000011bc                __data_load_start = LOADADDR (.data)
+                0x000011ee                __data_load_end = (__data_load_start + SIZEOF (.data))
 
-.noinit         0x00800127        0x0
+.noinit         0x0080013d        0x0
                 [!provide]                PROVIDE (__noinit_start, .)
  *(.noinit*)
                 [!provide]                PROVIDE (__noinit_end, .)
-                0x00800127                _end = .
+                0x0080013d                _end = .
                 [!provide]                PROVIDE (__heap_start, .)
 
 .eeprom         0x00810000        0x0
@@ -596,55 +615,55 @@ END GROUP
 .debug_sfnames
  *(.debug_sfnames)
 
-.debug_aranges  0x00000000      0x138
+.debug_aranges  0x00000000      0x170
  *(.debug_aranges)
  .debug_aranges
                 0x00000000       0x28 delay.o
  .debug_aranges
                 0x00000028       0x80 lcd.o
  .debug_aranges
-                0x000000a8       0x90 main.o
+                0x000000a8       0xc8 main.o
 
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000      0x7fc
+.debug_info     0x00000000      0x968
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000       0xb5 delay.o
  .debug_info    0x000000b5      0x3a7 lcd.o
- .debug_info    0x0000045c      0x3a0 main.o
+ .debug_info    0x0000045c      0x50c main.o
 
-.debug_abbrev   0x00000000      0x3a5
+.debug_abbrev   0x00000000      0x422
  *(.debug_abbrev)
  .debug_abbrev  0x00000000       0x89 delay.o
  .debug_abbrev  0x00000089      0x18e lcd.o
- .debug_abbrev  0x00000217      0x18e main.o
+ .debug_abbrev  0x00000217      0x20b main.o
 
-.debug_line     0x00000000      0xb5f
+.debug_line     0x00000000      0xdc8
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x00000000       0xa6 delay.o
  .debug_line    0x000000a6      0x4b1 lcd.o
- .debug_line    0x00000557      0x608 main.o
+ .debug_line    0x00000557      0x871 main.o
 
-.debug_frame    0x00000000      0x4a4
+.debug_frame    0x00000000      0x584
  *(.debug_frame)
  .debug_frame   0x00000000       0x54 delay.o
  .debug_frame   0x00000054      0x1d4 lcd.o
- .debug_frame   0x00000228      0x27c main.o
+ .debug_frame   0x00000228      0x35c main.o
 
-.debug_str      0x00000000      0x429
+.debug_str      0x00000000      0x4c8
  *(.debug_str)
  .debug_str     0x00000000      0x131 delay.o
  .debug_str     0x00000131      0x177 lcd.o
                                 0x2d3 (size before relaxing)
- .debug_str     0x000002a8      0x181 main.o
-                                0x2d8 (size before relaxing)
+ .debug_str     0x000002a8      0x220 main.o
+                                0x392 (size before relaxing)
 
-.debug_loc      0x00000000      0x923
+.debug_loc      0x00000000      0xaf4
  *(.debug_loc)
  .debug_loc     0x00000000       0x90 delay.o
  .debug_loc     0x00000090      0x38c lcd.o
- .debug_loc     0x0000041c      0x507 main.o
+ .debug_loc     0x0000041c      0x6d8 main.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -664,11 +683,11 @@ END GROUP
 .debug_pubtypes
  *(.debug_pubtypes)
 
-.debug_ranges   0x00000000      0x108
+.debug_ranges   0x00000000      0x140
  *(.debug_ranges)
  .debug_ranges  0x00000000       0x18 delay.o
  .debug_ranges  0x00000018       0x70 lcd.o
- .debug_ranges  0x00000088       0x80 main.o
+ .debug_ranges  0x00000088       0xb8 main.o
 
 .debug_macro
  *(.debug_macro)
