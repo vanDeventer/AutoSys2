@@ -2,14 +2,14 @@
  * AutoSys2.c
  *
  * Created: 13-Nov-16 11:36:25 AM
- * Updated: 20-July-2017
+ * Updated: 06-Sept-2017
  * Author : Jan vanDeventer; email: jan.van.deventer@ltu.se
  */ 
 
 /*
  * Purpose of this version:
- * The purpose of this version of the program is to introduce 
- *	Introduce serial communication with USART
+ * The purpose of this version of the generate a PWM (pulse width modulation) signal that dims the display. 
+ *	We use timer/counter 0.
 */
 
 #define DISPLAYLENGTH 16	/* number of characters on the display */
@@ -122,6 +122,19 @@ void usart1_init(unsigned int baudrate) {
 	UCSR1C = (0<<UMSEL0) | (0<<USBS0) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCSZ2);
 	/* Enable receiver, transmitter and receive interrupt */
 	UCSR1B = (1<<RXEN1) | (1<<TXEN1);// | (1<<RXCIE1);
+}
+
+void TimerCounter0setup(int start)
+{
+	//Setup mode on Timer counter 0 to PWM phase correct
+	TCCR0A = (0<<WGM01) | (1<<WGM00);
+	//Set OC0A on compare match when counting up and clear when counting down
+	TCCR0A |= (1<<COM0A1) | (1<<COM0A0);
+	//Setup pre-scaller for timer counter 0
+	TCCR0A |= (0<<CS02) | (0<<CS01) | (1<<CS00);  //Source clock IO, no pre-scaling
+
+	//Setup output compare register A
+	OCR0A = start;
 }
 
 /* end of the initialization functions, begin with functions called */
@@ -421,6 +434,7 @@ int main(void){
 	temp = initADC();				// Setup the Analog to Digital Converter
 	temp = initDisplay();
 	usart1_init(51);				//BAUDRATE_19200 (look at page s183 and 203)
+	TimerCounter0setup(127);
 
 	
 	ADCSRA |= (1<<ADSC);			//Start ADC
@@ -430,6 +444,7 @@ int main(void){
 		temp++;
 		ADCSRA &= ~(1<<ADIE);		//disable ADC interrupt to prevent value update during the conversion
 		itoa(adc_value, text, 9);	//Convert the unsigned integer to an ascii string; look at 3.6 "The C programming language"
+		OCR0A = adc_value >> 2;		// using the top 8 bits of the ADC, load OCR0A to compare to the timer Counter 0 to generate aPWM
 		ADCSRA |= (1<<ADIE);		//re-enable ADC interrupt
 		if (bToggle)			//This is set to true only in the interrupt service routine at the bottom of the code
 		{
