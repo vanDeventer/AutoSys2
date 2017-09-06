@@ -2,7 +2,6 @@
 
 # Purpose
 
-The purpose of this readme file is to improve documentation.
-It is written using Markdown.
+The purpose of this branch is to make use Output Compare register associated with a Timer/Counter to generate a square wave.
 
-The purpose of this branch was to add the USART communication.
+In the present case, we use it to dim the background light of the display using the ADC.
